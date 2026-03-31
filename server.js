@@ -356,7 +356,10 @@ function startBotFill(key) {
     if (total >= qq.maxPlayers) { qq.botTimer=null; startGame(key); return; }
     const bot = getNextBot(usedNames);
     usedNames.add(bot.name);
-    qq.bots.push({...bot, isBot:true, isMe:false});
+    
+    // Assign a distinct color from the global palette
+    const color = PLAYER_COLORS[total % 20] || '#6366f1';
+    qq.bots.push({...bot, isBot:true, isMe:false, color});
     broadcastQueue(qq);
     qq.botTimer = setTimeout(addBot, 500 + Math.random() * 400);
   }
@@ -428,6 +431,11 @@ function resolveGame(roomId) {
 }
 
 /* ── Socket.io ── */
+const PLAYER_COLORS = [
+  '#ef4444','#f97316','#f59e0b','#84cc16','#22c55e','#10b981','#14b8a6','#06b6d4','#0ea5e9','#3b82f6',
+  '#6366f1','#8b5cf6','#a855f7','#d946ef','#ec4899','#f43f5e','#b91c1c','#047857','#1e3a8a','#be185d'
+];
+
 io.on('connection', (socket) => {
   console.log(`[Socket] Connected: ${socket.id}`);
 
@@ -463,7 +471,13 @@ io.on('connection', (socket) => {
       dbRun('UPDATE users SET balance=? WHERE id=?', [bal.balance, ud.userId]);
       socket.emit('balance_update',{balance:bal.balance}); return;
     }
-    q.players.push(ud);
+    
+    // Assign a distinct color
+    const total = q.players.length + q.bots.length;
+    const color = PLAYER_COLORS[total % 20] || '#6366f1';
+    const playerWithColor = { ...ud, color };
+    
+    q.players.push(playerWithColor);
     socket.join(q.roomId);
     broadcastQueue(q);
     startBotFill(key);

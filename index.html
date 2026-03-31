@@ -23,12 +23,11 @@
   .nav-links.mobile-open{display:flex!important}
   .nav-inner{padding:0 1rem}
   .nav-actions .btn-gold.btn-sm{display:none}
-  .hero-metrics{flex-wrap:wrap;gap:4px;padding:0 1rem}
-  .hero-metric{flex:1 1 30%;min-width:80px}
-  .hero-metric:first-child{border-radius:10px 0 0 0}
-  .hero-metric:last-child{border-radius:0 0 10px 0}
-  .hm-val{font-size:1.1rem}
-  .hero-title{font-size:clamp(2rem,8vw,4rem)!important;letter-spacing:-1.5px}
+  .hero-metrics{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;padding:0 1rem!important;flex-wrap:nowrap!important}
+  .hero-metric{border-radius:12px!important;padding:1rem!important;flex:initial!important;min-width:0}
+  .hero-metric:last-child{grid-column:1 / -1;border-radius:12px!important}
+  .hm-val{font-size:1.4rem}
+  .hero-title{font-size:clamp(2rem,9vw,3.5rem)!important;letter-spacing:-1.5px;margin-top:2rem}
   .hero-sub{font-size:.9rem}
   .hero-cta{gap:.6rem}
   .hero-cta .btn-lg{padding:.7rem 1.5rem;font-size:.82rem}
@@ -40,17 +39,22 @@
   .modal-body{padding:1rem}
   section{padding:3rem 0}
   .balance-pill .bp-label{display:none}
-  .user-dropdown{right:-1rem}
+  .user-dropdown{right:0}
+  .hero-content{margin-top:-0.5rem}
 }
 @media(max-width:480px){
-  .hero-metrics{gap:2px;padding:0 .6rem}
-  .hero-metric{padding:.5rem .4rem;flex:1 1 45%}
-  .hm-val{font-size:.9rem}
-  .hm-lbl{font-size:.52rem;letter-spacing:.5px}
+  .hero-metrics{gap:4px!important;padding:0 .5rem!important}
+  .hero-metric{padding:.8rem .4rem!important;border-radius:8px!important}
+  .hm-val{font-size:1.1rem}
+  .hm-lbl{font-size:.55rem;letter-spacing:.5px}
   .steps-grid{grid-template-columns:1fr}
   .deposit-banner-inner{flex-direction:column;text-align:center;gap:.6rem;padding:.6rem 1rem}
   .hero-cta{flex-direction:column;width:100%}
   .hero-cta .btn{width:100%}
+  .nav-inner{gap:0.5rem;padding:0 0.5rem}
+  .nav-actions{gap:0.4rem}
+  .balance-pill{padding:0.35rem 0.6rem}
+  .user-avatar{width:32px;height:32px;font-size:0.7rem}
 }
 
 /* ── Nav ── */
@@ -342,10 +346,6 @@ footer{background:#1a1d2e;border-top:1px solid rgba(255,255,255,.06);padding:3.5
   <div class="nav-inner">
     <a href="index.html" class="nav-logo">VELOX</a>
 
-    <button class="hamburger" id="hamburgerBtn" onclick="toggleMobileNav()">
-      <span></span><span></span><span></span>
-    </button>
-
     <div class="nav-links" id="navLinks">
       <a href="#games" onclick="closeMobileNav()">Games</a>
       <a href="#how" onclick="closeMobileNav()">How It Works</a>
@@ -384,6 +384,10 @@ footer{background:#1a1d2e;border-top:1px solid rgba(255,255,255,.06);padding:3.5
           </div>
         </div>
       </div>
+      
+      <button class="hamburger" id="hamburgerBtn" onclick="toggleMobileNav()">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </div>
 </nav>
