@@ -299,16 +299,12 @@ function buildWheelBitmap() {
     let color = p.color || '#6366f1';
     if (!color.startsWith('#')) color = '#6366f1';
     oc.beginPath(); oc.moveTo(CX,CY); oc.arc(CX,CY,R_OUT-4,s,e); oc.closePath();
-    const gx=CX+Math.cos(m)*(R_OUT-4)*.6, gy=CY+Math.sin(m)*(R_OUT-4)*.6;
-    const gr=oc.createRadialGradient(gx,gy,0,CX,CY,R_OUT-4);
-    gr.addColorStop(0,lighten(color,.3)); gr.addColorStop(.45,color); gr.addColorStop(1,darken(color,.45));
-    oc.fillStyle=gr; oc.fill();
+    oc.fillStyle = color; oc.fill();
+    
+    // borders
     oc.beginPath(); oc.moveTo(CX,CY); oc.lineTo(CX+Math.cos(s)*(R_OUT-4),CY+Math.sin(s)*(R_OUT-4));
     oc.strokeStyle='rgba(255,255,255,.4)'; oc.lineWidth=1.5; oc.stroke();
-    oc.beginPath(); oc.moveTo(CX,CY); oc.arc(CX,CY,R_OUT-4,s,e); oc.closePath();
-    const bv=oc.createLinearGradient(CX+Math.cos(m-ARC*.4)*(R_OUT-4)*.35,CY+Math.sin(m-ARC*.4)*(R_OUT-4)*.35,CX+Math.cos(m+ARC*.4)*(R_OUT-4)*.35,CY+Math.sin(m+ARC*.4)*(R_OUT-4)*.35);
-    bv.addColorStop(0,'rgba(255,255,255,.22)'); bv.addColorStop(.5,'rgba(255,255,255,0)'); bv.addColorStop(1,'rgba(0,0,0,.14)');
-    oc.fillStyle=bv; oc.fill();
+    
     const avR=(R_OUT-4)*.62, ax=CX+Math.cos(m)*avR, ay=CY+Math.sin(m)*avR;
     oc.beginPath(); oc.arc(ax,ay,N>20?9:13,0,2*Math.PI);
     oc.fillStyle=darken(color,.3); oc.fill();
