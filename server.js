@@ -432,8 +432,8 @@ function resolveGame(roomId) {
 
 /* ── Socket.io ── */
 const PLAYER_COLORS = [
-  '#ef4444','#f97316','#f59e0b','#84cc16','#22c55e','#10b981','#14b8a6','#06b6d4','#0ea5e9','#3b82f6',
-  '#6366f1','#8b5cf6','#a855f7','#d946ef','#ec4899','#f43f5e','#b91c1c','#047857','#1e3a8a','#be185d'
+  '#FF0000', '#0044FF', '#FFD700', '#FF7700', '#00A2FF', '#E60000', '#1E90FF', '#FFA500', '#FF3300', '#3b82f6',
+  '#FFFF00', '#CC0000', '#0066CC', '#FF5500', '#FFCC00', '#00008B', '#FF8C00', '#8B0000', '#4169E1', '#FF1100'
 ];
 
 io.on('connection', (socket) => {
