@@ -24,11 +24,15 @@ body{background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
 .game-layout{flex:1;display:grid;grid-template-columns:300px 1fr 290px;gap:0;height:calc(100vh - var(--header-h));max-height:calc(100vh - var(--header-h));min-height:0;overflow:hidden}
 @media(max-width:1100px){.game-layout{grid-template-columns:260px 1fr 240px}}
 @media(max-width:860px){
-  .game-layout{grid-template-columns:1fr;height:auto;max-height:none;overflow:visible}
+  .game-layout{grid-template-columns:1fr;height:auto!important;max-height:none!important;overflow:visible!important}
   body{overflow-x:hidden}
-  .side-panel{border-right:none!important;border-left:none!important;border-bottom:1px solid var(--border-dim);height:auto!important;max-height:none}
+  .side-panel{border-right:none!important;border-left:none!important;border-bottom:1px solid var(--border-dim);height:auto!important;max-height:none!important;overflow:visible!important}
   .side-panel:last-child{border-bottom:none}
-  .arena{min-height:60vh;height:auto;padding:1rem}
+  .sp-body{overflow:visible!important;flex:none!important;height:auto!important}
+  .players-list{display:flex;flex:none!important;height:auto!important;overflow:visible!important}
+  .player-slot{flex:none!important;max-height:none!important;min-height:48px!important;padding:.5rem .75rem!important}
+  .ps-avatar, .ps-empty-avatar{font-size:.72rem!important}
+  .arena{min-height:60vh;height:auto!important;padding:1rem;overflow:visible!important}
   .wheel-wrap{width:min(320px,85vw)!important;height:min(320px,85vw)!important}
   #spinCanvas{width:100%!important;height:100%!important}
   .top-bar{padding:0 .8rem;gap:.6rem}
