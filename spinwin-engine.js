@@ -391,27 +391,33 @@ function startSpinAnimation(winnerIdx, data) {
   const N = players.length;
   const ARC = (2 * Math.PI) / N;
 
+  // The center angle of the winning pocket relative to the wheel (0 angle is East on canvas)
   const pocketMid = winnerIdx * ARC + ARC / 2;
+  // Add some random jitter inside the pocket
   const jitter = (Math.random() - 0.5) * ARC * 0.6;
   const pocketTarget = pocketMid + jitter;
 
   const DROP_A = Math.random() * 2 * Math.PI - Math.PI;
+  // Make the wheel spin at least 6 full times
   const extraRotations = (6 + Math.random() * 4) * 2 * Math.PI;
+  
+  // The peg is at -PI/2 (top of the wheel)
   const pegAngle = -Math.PI / 2;
+  // We want the wheel's final angle to be such that pocketTarget aligns with pegAngle
   const rawTarget = pegAngle - pocketTarget;
+  // Calculate total wheel rotation needed
   const targetAngle = wheelAngle + extraRotations + ((rawTarget - wheelAngle - extraRotations) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
-
-  const ballExtraSpins = (4 + Math.random() * 3) * 2 * Math.PI;
-  const finalBallAngle = pegAngle + jitter;
 
   ballEl.style.display = 'block';
   setBall(DROP_A, DROP_R);
   ballAngle = DROP_A;
   ballRadius = DROP_R;
 
+  // 1. Drop the ball into the track
   const DROP_DUR = 480;
   const t0drop = performance.now();
   function dropEase(t) { return t < .7 ? (t/.7)**2 : 1 + Math.sin((t-.7)/.3*Math.PI) * .09 * (1-(t-.7)/.3); }
+  
   function dropFrame(now) {
     const p = Math.min((now - t0drop) / DROP_DUR, 1);
     const r = DROP_R - (DROP_R - TRACK_R) * dropEase(p);
@@ -422,25 +428,41 @@ function startSpinAnimation(winnerIdx, data) {
   }
   requestAnimationFrame(dropFrame);
 
+  // 2. Spin wheel and ball together
   const SPIN_DUR = 5800;
   let t0spin;
   const a0 = wheelAngle;
+  // Ball starts spinning around the track, faster than the wheel at first, then settles into the pocket
+  const ballExtraSpins = (4 + Math.random() * 3) * 2 * Math.PI;
   const ballA0 = DROP_A;
 
   function spinPhaseStart() { t0spin = performance.now(); requestAnimationFrame(spinFrame); }
   function spinFrame(now) {
     const p = Math.min((now - t0spin) / SPIN_DUR, 1);
+    // Ease-out cubic/quartic curve for the wheel
     const ep = 1 - Math.pow(1 - p, 4.2);
 
     wheelAngle = a0 + (targetAngle - a0) * ep;
     drawWheel(wheelAngle);
 
-    const ballSpeed = (1 - p * 0.92);
-    const currentBallAngle = ballA0 - ballExtraSpins * ep;
-    const settleBlend = Math.max(0, (p - 0.7) / 0.3);
-    const blendedAngle = currentBallAngle * (1 - settleBlend) + finalBallAngle * settleBlend;
+    // Ball angle logic:
+    // Starts independent, spinning fast.
+    // By the end of the spin (p -> 1), it must perfectly match the wheel's rotation + the pocket offset.
+    const currentWheelAngle = wheelAngle;
+    const currentPocketAbsoluteAngle = currentWheelAngle + pocketTarget;
+    
+    // Smooth transition from "free spinning" to "locked in pocket"
+    const lockPhase = Math.max(0, (p - 0.6) / 0.4); // 0 to 1 in the last 40% of the spin
+    const targetLockedAngle = currentPocketAbsoluteAngle;
+    
+    // Free spinning angle
+    const freeAngle = ballA0 - ballExtraSpins * (1 - Math.pow(1 - p, 3.0));
 
-    const radiusProgress = Math.pow(p, 1.8);
+    // Blend the two: free spinning -> locked into the wheel's pocket
+    const blendedAngle = freeAngle * (1 - lockPhase) + targetLockedAngle * lockPhase;
+
+    // Radius moves from TRACK_R down to SETTLE_R as it locks into the pocket
+    const radiusProgress = Math.pow(lockPhase, 1.8);
     const currentRadius = TRACK_R - (TRACK_R - SETTLE_R) * radiusProgress;
 
     ballAngle = blendedAngle;
@@ -449,8 +471,9 @@ function startSpinAnimation(winnerIdx, data) {
 
     if (p < 1) { requestAnimationFrame(spinFrame); return; }
 
+    // Spin finished
     wheelAngle = ((targetAngle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-    ballRestAngle = finalBallAngle;
+    ballRestAngle = wheelAngle + pocketTarget;
     ballRestRadius = SETTLE_R;
     setBall(ballRestAngle, ballRestRadius);
     spinActive = false;
@@ -499,9 +522,13 @@ function resetGame() {
   document.getElementById('asRound').textContent='—';
   buildEmptySlots(); updatePotUI(); setStatus('Waiting'); drawIdleWheel();
 }
-function resetUI(){
-  gameState='idle'; players=[]; wheelAngle=0;
-  ballEl.style.display='none'; offWheel=null; offAxle=null;
+function resetUI() {
+  // Only called when backing out early, NOT at the end of a game
+  if (gameState !== 'result') {
+    ballRestAngle=null; ballEl.style.display='none';
+    wheelAngle=0;
+  }
+  gameState='idle'; players=[]; offWheel=null; offAxle=null;
   document.getElementById('cdOverlay').classList.remove('active');
   document.getElementById('matchProgress').classList.remove('active');
   document.getElementById('btnFind').disabled=false;
@@ -509,7 +536,15 @@ function resetUI(){
   document.getElementById('btnLeave').style.display='none';
   document.getElementById('stakeChips').style.pointerEvents='';
   document.getElementById('pcChips').style.pointerEvents='';
-  buildEmptySlots(); updatePotUI(); setStatus('Waiting'); drawIdleWheel();
+  buildEmptySlots(); updatePotUI(); setStatus('Waiting');
+  
+  // If we have a resting ball, don't clear the wheel entirely
+  if (ballRestAngle !== null) {
+    if (!offWheel) { drawIdleWheel(); } // fallback
+    // ball stays where it is
+  } else {
+    drawIdleWheel();
+  }
 }
 
 function setStatus(s){document.getElementById('abStatus').textContent=s;}

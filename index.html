@@ -803,9 +803,9 @@ function updateAuthUI() {
   document.getElementById('depositBanner').classList.toggle('active', loggedIn);
   if (loggedIn) {
     updateBalanceDisplay();
-    document.getElementById('bannerName').textContent = currentUser.first_name;
+    document.getElementById('bannerName').textContent = currentUser.firstName;
     document.getElementById('userInitials').textContent =
-      (currentUser.first_name[0] + (currentUser.last_name || '')[0] || '').toUpperCase();
+      (currentUser.firstName[0] + (currentUser.lastName || '')[0] || '').toUpperCase();
   }
 }
 
@@ -891,7 +891,7 @@ async function doLogin() {
 
     closeModal('loginModal');
     updateAuthUI();
-    showToast('👋 Welcome back, ' + currentUser.first_name + '!');
+    showToast('👋 Welcome back, ' + currentUser.firstName + '!');
   } catch (err) {
     showToast('⚠ Connection error — is server running?');
   } finally {
