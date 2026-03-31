@@ -1,6 +1,7 @@
 /* ══════════════════════════════════════════════════════════════
    VELOX — Real-Time Multiplayer Gaming Server
    Express + Socket.io + sql.js + JWT + Crypto Wallet
+   Enhanced Security + USDT-native balances
 ══════════════════════════════════════════════════════════════ */
 const express = require('express');
 const http = require('http');
@@ -12,19 +13,72 @@ const initSqlJs = require('sql.js');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
+const rateLimit = require('express-rate-limit');
 
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'velox_secret_' + crypto.randomBytes(16).toString('hex');
+const JWT_SECRET = process.env.JWT_SECRET || 'velox_secret_' + crypto.randomBytes(32).toString('hex');
 const PLATFORM_FEE = 0.05;
 const DB_PATH = path.join(__dirname, 'velox.db');
-const USD_TO_INR = 83;
+const IS_PROD = process.env.NODE_ENV === 'production';
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*', methods: ['GET','POST'] } });
-app.use(cors());
+const io = new Server(server, { cors: { origin: '*', methods: ['GET','POST'], credentials: true } });
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
+
+/* ── Rate Limiting ── */
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000,  // 1 minute
+  max: 5,               // 5 attempts per minute
+  message: { error: 'Too many attempts. Please try again in a minute.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { error: 'Too many requests. Please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use('/api/', apiLimiter);
+
+/* ── Input Sanitization ── */
+function sanitize(str) {
+  if (typeof str !== 'string') return '';
+  return str.replace(/[<>"'&]/g, c => ({'<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','&':'&amp;'}[c])).trim();
+}
+function isValidEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+function isValidUsername(u) { return /^[a-zA-Z0-9_]{3,20}$/.test(u); }
+
+/* ── Cookie helpers ── */
+function setTokenCookie(res, token) {
+  res.cookie('velox_token', token, {
+    httpOnly: true,
+    secure: IS_PROD,
+    sameSite: IS_PROD ? 'strict' : 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    path: '/',
+  });
+}
+function clearTokenCookie(res) {
+  res.clearCookie('velox_token', { httpOnly: true, path: '/' });
+}
+
+/* ── Cookie parser (lightweight) ── */
+function parseCookies(cookieStr) {
+  const cookies = {};
+  if (!cookieStr) return cookies;
+  cookieStr.split(';').forEach(c => {
+    const [k, ...v] = c.split('=');
+    if (k) cookies[k.trim()] = decodeURIComponent(v.join('=').trim());
+  });
+  return cookies;
+}
 
 /* ── Database (sql.js) ── */
 let db;
@@ -60,7 +114,6 @@ function saveDB() {
   fs.writeFileSync(DB_PATH, Buffer.from(data));
 }
 
-// Helper query functions
 function dbGet(sql, params = []) {
   const stmt = db.prepare(sql);
   stmt.bind(params);
@@ -79,7 +132,7 @@ function dbRun(sql, params = []) {
   saveDB();
 }
 
-/* ── Crypto config ── */
+/* ── Crypto config (USDT-native) ── */
 const CRYPTO_CONFIG = {
   BTC: { name:'Bitcoin', symbol:'BTC', icon:'₿',
     addresses:['bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh','bc1q9h5yjqka3mz2f3hp2cjlassz0z6qlrgwyfxm5'],
@@ -101,54 +154,83 @@ function getDepositAddress(coin) {
   return c ? c.addresses[Math.floor(Math.random() * c.addresses.length)] : null;
 }
 
-/* ── Auth middleware ── */
+/* ── Auth middleware (cookie-based + legacy header fallback) ── */
 function authMW(req, res, next) {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return res.status(401).json({ error: 'No token' });
+  const cookies = parseCookies(req.headers.cookie);
+  const token = cookies.velox_token || req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Not authenticated' });
   try { req.userId = jwt.verify(token, JWT_SECRET).userId; next(); }
-  catch { return res.status(401).json({ error: 'Invalid token' }); }
+  catch { return res.status(401).json({ error: 'Invalid or expired session' }); }
 }
 function verifyToken(token) {
   try { return jwt.verify(token, JWT_SECRET).userId; } catch { return null; }
 }
 
+/* ── CSRF token generation ── */
+const csrfTokens = new Map(); // userId -> token (simple in-memory)
+function generateCSRF(userId) {
+  const token = crypto.randomBytes(32).toString('hex');
+  csrfTokens.set(userId, token);
+  return token;
+}
+
 /* ── REST: Auth ── */
-app.post('/api/register', (req, res) => {
+app.post('/api/register', authLimiter, (req, res) => {
   try {
-    const { firstName, lastName, email, username, password } = req.body;
+    let { firstName, lastName, email, username, password } = req.body;
+    firstName = sanitize(firstName);
+    lastName = sanitize(lastName || '');
+    email = sanitize(email);
+    username = sanitize(username);
+
     if (!firstName || !email || !username || !password) return res.status(400).json({ error: 'All fields required' });
+    if (!isValidEmail(email)) return res.status(400).json({ error: 'Invalid email format' });
+    if (!isValidUsername(username)) return res.status(400).json({ error: 'Username: 3-20 chars, letters/numbers/underscore only' });
     if (password.length < 8) return res.status(400).json({ error: 'Password must be 8+ chars' });
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) return res.status(400).json({ error: 'Password needs uppercase, lowercase, and number' });
+
     const existing = dbGet('SELECT id FROM users WHERE email=? OR username=?', [email, username]);
     if (existing) return res.status(409).json({ error: 'Email or username taken' });
-    const hash = bcrypt.hashSync(password, 10);
+    const hash = bcrypt.hashSync(password, 12);
     dbRun('INSERT INTO users (username,email,first_name,last_name,password_hash,balance) VALUES (?,?,?,?,?,?)',
-      [username, email, firstName, lastName||'', hash, 0]);
+      [username, email, firstName, lastName, hash, 0]);
     const user = dbGet('SELECT id,username,email,first_name,last_name,balance FROM users WHERE username=?', [username]);
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user });
+    setTokenCookie(res, token);
+    const csrf = generateCSRF(user.id);
+    res.json({ user, csrfToken: csrf });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Registration failed' }); }
 });
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', authLimiter, (req, res) => {
   try {
-    const { identifier, password } = req.body;
+    const identifier = sanitize(req.body.identifier || '');
+    const password = req.body.password;
     if (!identifier || !password) return res.status(400).json({ error: 'Credentials required' });
     const user = dbGet('SELECT * FROM users WHERE email=? OR username=?', [identifier, identifier]);
     if (!user || !bcrypt.compareSync(password, user.password_hash))
       return res.status(401).json({ error: 'Invalid credentials' });
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+    setTokenCookie(res, token);
     const profile = dbGet('SELECT id,username,email,first_name,last_name,balance FROM users WHERE id=?', [user.id]);
-    res.json({ token, user: profile });
+    const csrf = generateCSRF(user.id);
+    res.json({ user: profile, csrfToken: csrf });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Login failed' }); }
+});
+
+app.post('/api/logout', (req, res) => {
+  clearTokenCookie(res);
+  res.json({ success: true });
 });
 
 app.get('/api/me', authMW, (req, res) => {
   const user = dbGet('SELECT id,username,email,first_name,last_name,balance FROM users WHERE id=?', [req.userId]);
   if (!user) return res.status(404).json({ error: 'Not found' });
-  res.json({ user });
+  const csrf = generateCSRF(user.id);
+  res.json({ user, csrfToken: csrf });
 });
 
-/* ── REST: Wallet ── */
+/* ── REST: Wallet (USDT-native) ── */
 app.get('/api/balance', authMW, (req, res) => {
   const r = dbGet('SELECT balance FROM users WHERE id=?', [req.userId]);
   res.json({ balance: r ? r.balance : 0 });
@@ -156,43 +238,42 @@ app.get('/api/balance', authMW, (req, res) => {
 
 app.post('/api/deposit', authMW, (req, res) => {
   try {
-    const { coin, amountUSD } = req.body;
+    const { coin, amountUSDT } = req.body;
     const cfg = CRYPTO_CONFIG[coin];
     if (!cfg) return res.status(400).json({ error: 'Unsupported coin' });
-    if (!amountUSD || amountUSD < 1) return res.status(400).json({ error: 'Min deposit $1' });
-    const inr = amountUSD * USD_TO_INR;
+    if (!amountUSDT || amountUSDT < 1) return res.status(400).json({ error: 'Min deposit $1 USDT' });
     const addr = getDepositAddress(coin);
     const txHash = generateTxHash();
     const cur = dbGet('SELECT balance FROM users WHERE id=?', [req.userId]);
-    dbRun('UPDATE users SET balance=? WHERE id=?', [cur.balance + inr, req.userId]);
+    dbRun('UPDATE users SET balance=? WHERE id=?', [cur.balance + amountUSDT, req.userId]);
     dbRun('INSERT INTO transactions (user_id,type,coin,amount,wallet_address,tx_hash,status) VALUES (?,?,?,?,?,?,?)',
-      [req.userId, 'deposit', coin, inr, addr, txHash, 'completed']);
+      [req.userId, 'deposit', coin, amountUSDT, addr, txHash, 'completed']);
     const newBal = dbGet('SELECT balance FROM users WHERE id=?', [req.userId]).balance;
     notifyBalanceUpdate(req.userId, newBal);
-    res.json({ success:true, depositAddress:addr, amountCrypto:(amountUSD/cfg.usdRate).toFixed(8),
-      amountINR:inr.toFixed(2), txHash, newBalance:newBal,
-      message:`${cfg.icon} $${amountUSD} deposited → ₹${inr.toFixed(0)} credited` });
+    res.json({ success:true, depositAddress:addr, amountCrypto:(amountUSDT/cfg.usdRate).toFixed(8),
+      amountUSDT:amountUSDT.toFixed(2), txHash, newBalance:newBal,
+      message:`${cfg.icon} $${amountUSDT} USDT deposited successfully` });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Deposit failed' }); }
 });
 
 app.post('/api/withdraw', authMW, (req, res) => {
   try {
-    const { coin, amountINR, walletAddress } = req.body;
+    const { coin, amountUSDT, walletAddress } = req.body;
     const cfg = CRYPTO_CONFIG[coin];
     if (!cfg) return res.status(400).json({ error: 'Unsupported coin' });
     if (!walletAddress) return res.status(400).json({ error: 'Wallet address required' });
-    if (!amountINR || amountINR < 100) return res.status(400).json({ error: 'Min withdrawal ₹100' });
+    if (!amountUSDT || amountUSDT < 5) return res.status(400).json({ error: 'Min withdrawal $5 USDT' });
     const cur = dbGet('SELECT balance FROM users WHERE id=?', [req.userId]);
-    if (amountINR > cur.balance) return res.status(400).json({ error: 'Insufficient balance' });
+    if (amountUSDT > cur.balance) return res.status(400).json({ error: 'Insufficient balance' });
     const txHash = generateTxHash();
-    const cryptoAmt = (amountINR / USD_TO_INR) / cfg.usdRate;
-    dbRun('UPDATE users SET balance=? WHERE id=?', [cur.balance - amountINR, req.userId]);
+    const cryptoAmt = amountUSDT / cfg.usdRate;
+    dbRun('UPDATE users SET balance=? WHERE id=?', [cur.balance - amountUSDT, req.userId]);
     dbRun('INSERT INTO transactions (user_id,type,coin,amount,wallet_address,tx_hash,status) VALUES (?,?,?,?,?,?,?)',
-      [req.userId, 'withdraw', coin, amountINR, walletAddress, txHash, 'processing']);
+      [req.userId, 'withdraw', coin, amountUSDT, walletAddress, txHash, 'processing']);
     const newBal = dbGet('SELECT balance FROM users WHERE id=?', [req.userId]).balance;
     notifyBalanceUpdate(req.userId, newBal);
-    res.json({ success:true, amountCrypto:cryptoAmt.toFixed(8), amountINR:amountINR.toFixed(2),
-      txHash, newBalance:newBal, message:`🚀 ₹${amountINR.toFixed(0)} → ${cryptoAmt.toFixed(6)} ${coin} withdrawal initiated` });
+    res.json({ success:true, amountCrypto:cryptoAmt.toFixed(8), amountUSDT:amountUSDT.toFixed(2),
+      txHash, newBalance:newBal, message:`🚀 $${amountUSDT} USDT → ${cryptoAmt.toFixed(6)} ${coin} withdrawal initiated` });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Withdrawal failed' }); }
 });
 
@@ -206,7 +287,7 @@ app.get('/api/crypto-config', (req, res) => {
     config[k] = { name:v.name, symbol:v.symbol, icon:v.icon, usdRate:v.usdRate,
       minDeposit:v.minDeposit, minWithdraw:v.minWithdraw, depositAddress:getDepositAddress(k) };
   }
-  res.json({ coins: config, usdToInr: USD_TO_INR });
+  res.json({ coins: config });
 });
 
 /* ══════════════════════════════════════
@@ -263,7 +344,6 @@ function startBotFill(key) {
   if (!q || q.botTimer) return;
   const usedNames = new Set([...q.players.map(p=>p.firstName),...q.bots.map(b=>b.name)]);
 
-  // Broadcast "waiting for real players" status
   for (const p of q.players) {
     const s = io.sockets.sockets.get(p.socketId);
     if (s) s.emit('matchmaking_status', { phase: 'waiting_real', message: 'Searching for real players...' });
@@ -278,15 +358,12 @@ function startBotFill(key) {
     usedNames.add(bot.name);
     qq.bots.push({...bot, isBot:true, isMe:false});
     broadcastQueue(qq);
-    // Stagger bots: 500-900ms between each
     qq.botTimer = setTimeout(addBot, 500 + Math.random() * 400);
   }
 
-  // Wait 5 seconds for real players before filling with bots
   q.botTimer = setTimeout(() => {
     const qq = queues.get(key);
     if (!qq) return;
-    // Notify that bots are starting to fill
     for (const p of qq.players) {
       const s = io.sockets.sockets.get(p.socketId);
       if (s) s.emit('matchmaking_status', { phase: 'filling', message: 'Filling remaining spots...' });
@@ -324,7 +401,7 @@ function startGame(key) {
   }, 5500);
 
   queues.delete(key);
-  console.log(`[Game] Started: ${roomId} | ${q.maxPlayers}p | ₹${q.stake} | Prize ₹${prize}`);
+  console.log(`[Game] Started: ${roomId} | ${q.maxPlayers}p | $${q.stake} USDT | Prize $${prize}`);
 }
 
 function resolveGame(roomId) {
@@ -355,7 +432,10 @@ io.on('connection', (socket) => {
   console.log(`[Socket] Connected: ${socket.id}`);
 
   socket.on('authenticate', (data) => {
-    const userId = verifyToken(data.token);
+    // Support both cookie-based and token-based auth for socket
+    const cookies = parseCookies(socket.handshake.headers.cookie);
+    const token = data.token || cookies.velox_token;
+    const userId = verifyToken(token);
     if (!userId) { socket.emit('auth_error',{error:'Invalid token'}); return; }
     const user = dbGet('SELECT id,username,email,first_name,last_name,balance FROM users WHERE id=?', [userId]);
     if (!user) { socket.emit('auth_error',{error:'User not found'}); return; }
@@ -368,6 +448,9 @@ io.on('connection', (socket) => {
     if (!ud) { socket.emit('queue_error',{error:'Not authenticated'}); return; }
     const { stake, maxPlayers } = data;
     if (!stake || !maxPlayers) { socket.emit('queue_error',{error:'Invalid params'}); return; }
+    if (maxPlayers < 2 || maxPlayers > 20) { socket.emit('queue_error',{error:'Players must be 2-20'}); return; }
+    const validStakes = [1,5,10,20,50,70,100,200,500,1000];
+    if (!validStakes.includes(stake)) { socket.emit('queue_error',{error:'Invalid stake amount'}); return; }
     const bal = dbGet('SELECT balance FROM users WHERE id=?', [ud.userId]);
     if (!bal || bal.balance < stake) { socket.emit('queue_error',{error:'Insufficient balance'}); return; }
     dbRun('UPDATE users SET balance=? WHERE id=?', [bal.balance-stake, ud.userId]);
@@ -427,6 +510,6 @@ io.on('connection', (socket) => {
 (async () => {
   await initDB();
   server.listen(PORT, () => {
-    console.log(`\n  VELOX Server → http://localhost:${PORT}\n  Matchmaking ✅ | Crypto Wallet ✅ | Socket.io ✅\n`);
+    console.log(`\n  VELOX Server → http://localhost:${PORT}\n  Matchmaking ✅ | Crypto Wallet ✅ | Socket.io ✅ | Security ✅\n`);
   });
 })();

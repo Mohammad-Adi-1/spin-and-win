@@ -21,9 +21,38 @@ body{background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
 .conn-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:.4rem;transition:background .3s}
 .conn-dot.connected{background:#4ade80;box-shadow:0 0 6px rgba(74,222,128,.5)}
 .conn-dot.disconnected{background:#ef4444;box-shadow:0 0 6px rgba(239,68,68,.5)}
-.game-layout{flex:1;display:grid;grid-template-columns:290px 1fr 290px;gap:0;height:calc(100vh - var(--header-h));overflow:hidden}
-@media(max-width:1100px){.game-layout{grid-template-columns:240px 1fr 240px}}
-@media(max-width:860px){.game-layout{grid-template-columns:1fr;height:auto;overflow:visible}body{overflow-x:hidden}}
+.game-layout{flex:1;display:grid;grid-template-columns:300px 1fr 290px;gap:0;height:calc(100vh - var(--header-h));overflow:hidden}
+@media(max-width:1100px){.game-layout{grid-template-columns:260px 1fr 240px}}
+@media(max-width:860px){
+  .game-layout{grid-template-columns:1fr;height:auto;overflow:visible}
+  body{overflow-x:hidden}
+  .side-panel{border-right:none!important;border-left:none!important;border-bottom:1px solid var(--border-dim);height:auto!important;max-height:none}
+  .side-panel:last-child{border-bottom:none}
+  .arena{min-height:60vh;padding:1rem}
+  .wheel-wrap{width:min(320px,85vw)!important;height:min(320px,85vw)!important}
+  #spinCanvas{width:100%!important;height:100%!important}
+  .top-bar{padding:0 .8rem;gap:.6rem}
+  .tb-game-name{display:none}
+  .tb-logo{font-size:1.1rem}
+  .tb-balance{padding:.3rem .6rem}
+  .tb-balance .tbb-v{font-size:.78rem}
+  .arena-bar,.arena-strip{max-width:100%;padding:.5rem .8rem;gap:.5rem}
+  .ab-val{font-size:.8rem}
+  .ab-lbl{font-size:.55rem}
+}
+@media(max-width:480px){
+  .top-bar{height:56px;padding:0 .6rem;gap:.4rem}
+  .tb-back{font-size:.72rem}
+  .tb-logo{font-size:1rem}
+  .tb-balance .tbb-l{display:none}
+  .wheel-wrap{width:min(280px,88vw)!important;height:min(280px,88vw)!important}
+  .stake-chips{grid-template-columns:repeat(5,1fr)!important;gap:.25rem}
+  .s-chip .sc-val{font-size:.75rem}
+  .s-chip .sc-label{font-size:.45rem}
+  .s-chip{padding:.35rem .2rem}
+  .pc-chips{grid-template-columns:repeat(4,1fr)!important;gap:.25rem}
+  .pc-chip{font-size:.75rem;padding:.4rem .15rem}
+}
 .side-panel{background:#fff;border-right:1px solid var(--border-dim);display:flex;flex-direction:column;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--indigo3) transparent;height:100%}
 .side-panel:last-child{border-right:none;border-left:1px solid var(--border-dim)}
 .side-panel::-webkit-scrollbar{width:3px}
@@ -31,16 +60,16 @@ body{background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
 .sp-head{padding:.85rem 1.2rem .7rem;border-bottom:1px solid var(--border-dim);display:flex;align-items:center;gap:.6rem;font-size:.7rem;font-weight:700;letter-spacing:.5px;color:var(--text2);text-transform:uppercase;flex-shrink:0;background:var(--bg4);position:sticky;top:0;z-index:5}
 .sp-head::before{content:'';width:3px;height:14px;border-radius:2px;background:linear-gradient(180deg,var(--indigo),var(--violet2));flex-shrink:0}
 .sp-body{padding:1rem 1.2rem;flex:1}
-.stake-chips{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:.7rem}
-.s-chip{padding:.5rem .3rem;border-radius:10px;background:var(--bg4);border:1.5px solid var(--border-dim);text-align:center;cursor:pointer;transition:all .18s;font-weight:700;color:var(--text2)}
+.stake-chips{display:grid;grid-template-columns:repeat(5,1fr);gap:.35rem;margin-bottom:.7rem}
+.s-chip{padding:.45rem .2rem;border-radius:10px;background:var(--bg4);border:1.5px solid var(--border-dim);text-align:center;cursor:pointer;transition:all .18s;font-weight:700;color:var(--text2)}
 .s-chip:hover{border-color:var(--indigo3);color:var(--indigo);background:var(--indigo5)}
 .s-chip.active{border-color:var(--indigo2);color:var(--indigo);background:var(--indigo5);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
-.s-chip .sc-label{font-size:.54rem;color:var(--text4);font-weight:600;display:block;margin-bottom:1px;text-transform:uppercase;letter-spacing:.5px}
-.s-chip .sc-val{font-size:.95rem;font-weight:800}
-.pc-chips{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-bottom:.7rem}
-.pc-chip{padding:.5rem .2rem;border-radius:10px;background:var(--bg4);border:1.5px solid var(--border-dim);text-align:center;cursor:pointer;transition:all .18s;font-size:.85rem;font-weight:700;color:var(--text2)}
+.s-chip .sc-label{font-size:.48rem;color:var(--text4);font-weight:600;display:block;margin-bottom:1px;text-transform:uppercase;letter-spacing:.3px}
+.s-chip .sc-val{font-size:.82rem;font-weight:800}
+.pc-chips{display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem;margin-bottom:.7rem}
+.pc-chip{padding:.45rem .2rem;border-radius:10px;background:var(--bg4);border:1.5px solid var(--border-dim);text-align:center;cursor:pointer;transition:all .18s;font-size:.82rem;font-weight:700;color:var(--text2)}
 .pc-chip:hover,.pc-chip.active{border-color:var(--indigo2);color:var(--indigo);background:var(--indigo5)}
-.pc-chip .pcc-label{font-size:.52rem;color:var(--text4);font-weight:600;display:block;margin-bottom:1px;text-transform:uppercase;letter-spacing:.5px}
+.pc-chip .pcc-label{font-size:.48rem;color:var(--text4);font-weight:600;display:block;margin-bottom:1px;text-transform:uppercase;letter-spacing:.3px}
 .pot-box{padding:.7rem .9rem;border-radius:12px;background:linear-gradient(135deg,var(--indigo5),#fff);border:1.5px solid var(--border);margin-bottom:.7rem}
 .pot-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:.28rem;font-size:.8rem}
 .pot-row:last-child{margin-bottom:0;padding-top:.35rem;border-top:1px solid var(--border-dim)}
@@ -128,7 +157,7 @@ body{background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
   <span class="tb-logo">VELOX</span>
   <span class="tb-game-name hide-mobile">Spin &amp; Win</span>
   <span class="conn-dot disconnected" id="connDot"></span>
-  <div class="tb-balance"><span class="tbb-l">Balance</span><span class="tbb-v" id="topBalance">₹0</span></div>
+  <div class="tb-balance"><span class="tbb-l">Balance</span><span class="tbb-v" id="topBalance">$0</span></div>
   <button class="btn btn-gold btn-sm" onclick="window.location.href='index.html'">+ Deposit</button>
 </div>
 <div class="game-layout">
@@ -136,35 +165,40 @@ body{background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
   <div class="side-panel">
     <div class="sp-head">Place Your Bet</div>
     <div class="sp-body">
-      <div class="sl">Your Stake</div>
+      <div class="sl">Your Stake (USDT)</div>
       <div class="stake-chips" id="stakeChips">
-        <div class="s-chip" onclick="setStake(this,10)"><span class="sc-label">Stake</span><span class="sc-val">₹10</span></div>
-        <div class="s-chip" onclick="setStake(this,20)"><span class="sc-label">Stake</span><span class="sc-val">₹20</span></div>
-        <div class="s-chip active" onclick="setStake(this,50)"><span class="sc-label">Stake</span><span class="sc-val">₹50</span></div>
-        <div class="s-chip" onclick="setStake(this,100)"><span class="sc-label">Stake</span><span class="sc-val">₹100</span></div>
-        <div class="s-chip" onclick="setStake(this,200)"><span class="sc-label">Stake</span><span class="sc-val">₹200</span></div>
-        <div class="s-chip" onclick="setStake(this,500)"><span class="sc-label">Stake</span><span class="sc-val">₹500</span></div>
+        <div class="s-chip" onclick="setStake(this,1)"><span class="sc-label">USDT</span><span class="sc-val">$1</span></div>
+        <div class="s-chip" onclick="setStake(this,5)"><span class="sc-label">USDT</span><span class="sc-val">$5</span></div>
+        <div class="s-chip active" onclick="setStake(this,10)"><span class="sc-label">USDT</span><span class="sc-val">$10</span></div>
+        <div class="s-chip" onclick="setStake(this,20)"><span class="sc-label">USDT</span><span class="sc-val">$20</span></div>
+        <div class="s-chip" onclick="setStake(this,50)"><span class="sc-label">USDT</span><span class="sc-val">$50</span></div>
+        <div class="s-chip" onclick="setStake(this,70)"><span class="sc-label">USDT</span><span class="sc-val">$70</span></div>
+        <div class="s-chip" onclick="setStake(this,100)"><span class="sc-label">USDT</span><span class="sc-val">$100</span></div>
+        <div class="s-chip" onclick="setStake(this,200)"><span class="sc-label">USDT</span><span class="sc-val">$200</span></div>
+        <div class="s-chip" onclick="setStake(this,500)"><span class="sc-label">USDT</span><span class="sc-val">$500</span></div>
+        <div class="s-chip" onclick="setStake(this,1000)"><span class="sc-label">USDT</span><span class="sc-val">$1K</span></div>
       </div>
       <div class="divider" style="margin:.5rem 0"></div>
       <div class="sl">Players per Round</div>
       <div class="pc-chips" id="pcChips">
-        <div class="pc-chip" onclick="setPC(this,5)"><span class="pcc-label">Players</span>5</div>
-        <div class="pc-chip active" onclick="setPC(this,10)"><span class="pcc-label">Players</span>10</div>
+        <div class="pc-chip" onclick="setPC(this,2)"><span class="pcc-label">Players</span>2</div>
+        <div class="pc-chip" onclick="setPC(this,3)"><span class="pcc-label">Players</span>3</div>
+        <div class="pc-chip active" onclick="setPC(this,5)"><span class="pcc-label">Players</span>5</div>
+        <div class="pc-chip" onclick="setPC(this,7)"><span class="pcc-label">Players</span>7</div>
+        <div class="pc-chip" onclick="setPC(this,10)"><span class="pcc-label">Players</span>10</div>
+        <div class="pc-chip" onclick="setPC(this,15)"><span class="pcc-label">Players</span>15</div>
         <div class="pc-chip" onclick="setPC(this,20)"><span class="pcc-label">Players</span>20</div>
-        <div class="pc-chip" onclick="setPC(this,30)"><span class="pcc-label">Players</span>30</div>
-        <div class="pc-chip" onclick="setPC(this,40)"><span class="pcc-label">Players</span>40</div>
-        <div class="pc-chip" onclick="setPC(this,50)"><span class="pcc-label">Players</span>50</div>
       </div>
       <div class="divider" style="margin:.5rem 0"></div>
       <div class="pot-box">
-        <div class="pot-row"><span class="pot-lbl">Your Stake</span><span class="pot-val" id="potStake">₹50</span></div>
-        <div class="pot-row"><span class="pot-lbl">Players</span><span class="pot-val" id="potPC">10</span></div>
-        <div class="pot-row"><span class="pot-lbl">Gross Pot</span><span class="pot-val" id="potGross">₹500</span></div>
-        <div class="pot-row"><span class="pot-lbl">Platform (5%)</span><span class="pot-val" id="potFee">₹25</span></div>
-        <div class="pot-row"><span class="pot-lbl" style="color:var(--indigo);font-weight:700">🏆 Winner Gets</span><span class="pot-val big" id="potWin">₹475</span></div>
+        <div class="pot-row"><span class="pot-lbl">Your Stake</span><span class="pot-val" id="potStake">$10</span></div>
+        <div class="pot-row"><span class="pot-lbl">Players</span><span class="pot-val" id="potPC">5</span></div>
+        <div class="pot-row"><span class="pot-lbl">Gross Pot</span><span class="pot-val" id="potGross">$50</span></div>
+        <div class="pot-row"><span class="pot-lbl">Platform (5%)</span><span class="pot-val" id="potFee">$2.50</span></div>
+        <div class="pot-row"><span class="pot-lbl" style="color:var(--indigo);font-weight:700">🏆 Winner Gets</span><span class="pot-val big" id="potWin">$47.50</span></div>
       </div>
       <div class="match-progress" id="matchProgress">
-        <div class="mp-header"><span class="mp-title">Matchmaking</span><span class="mp-count"><span id="mpJoined">1</span>/<span id="mpTotal">10</span></span></div>
+        <div class="mp-header"><span class="mp-title">Matchmaking</span><span class="mp-count"><span id="mpJoined">1</span>/<span id="mpTotal">5</span></span></div>
         <div class="mp-bar-track"><div class="mp-bar-fill" id="mpFill"></div></div>
         <div class="mp-status" id="mpStatus">Searching for players...</div>
       </div>
@@ -175,9 +209,9 @@ body{background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
   <!-- CENTER: Arena -->
   <div class="arena" id="arena">
     <div class="arena-bar" id="arenaBar">
-      <div class="ab-item"><div class="ab-val" id="abStake">₹50</div><div class="ab-lbl">Your Stake</div></div>
-      <div class="ab-item"><div class="ab-val" id="abPlayers">0/10</div><div class="ab-lbl">Players</div></div>
-      <div class="ab-item"><div class="ab-val" id="abPot">₹475</div><div class="ab-lbl">Prize Pool</div></div>
+      <div class="ab-item"><div class="ab-val" id="abStake">$10</div><div class="ab-lbl">Your Stake</div></div>
+      <div class="ab-item"><div class="ab-val" id="abPlayers">0/5</div><div class="ab-lbl">Players</div></div>
+      <div class="ab-item"><div class="ab-val" id="abPot">$47.50</div><div class="ab-lbl">Prize Pool</div></div>
       <div class="ab-item"><div class="ab-val" id="abStatus" style="color:var(--text3);font-size:.82rem">Waiting</div><div class="ab-lbl">Status</div></div>
     </div>
     <div class="wheel-wrap" id="wheelWrap">
@@ -186,18 +220,18 @@ body{background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
       <canvas id="spinCanvas" width="420" height="420"></canvas>
       <div id="ballEl"></div>
       <div class="cd-overlay" id="cdOverlay"><div class="cd-num" id="cdNum">5</div><div class="cd-label">Get Ready!</div><div class="cd-sub" id="cdSub">Spinning in a moment...</div></div>
-      <div class="result-overlay" id="resultOverlay"><div class="ro-trophy" id="roTrophy">🏆</div><div class="ro-name" id="roName">—</div><div class="ro-wins-label">Wins the pot!</div><div class="ro-prize" id="roPrize">₹0</div><div class="ro-fee" id="roFee"></div><button class="btn btn-gold btn-sm" style="margin-top:.5rem" onclick="resetGame()">Play Again</button></div>
+      <div class="result-overlay" id="resultOverlay"><div class="ro-trophy" id="roTrophy">🏆</div><div class="ro-name" id="roName">—</div><div class="ro-wins-label">Wins the pot!</div><div class="ro-prize" id="roPrize">$0</div><div class="ro-fee" id="roFee"></div><button class="btn btn-gold btn-sm" style="margin-top:.5rem" onclick="resetGame()">Play Again</button></div>
     </div>
     <div class="arena-strip">
       <div class="as-item"><div class="as-val" id="asJoined">0</div><div class="as-lbl">Joined</div></div>
-      <div class="as-item"><div class="as-val" id="asNeeded">10</div><div class="as-lbl">Needed</div></div>
-      <div class="as-item"><div class="as-val" id="asPool">₹475</div><div class="as-lbl">Prize Pool</div></div>
+      <div class="as-item"><div class="as-val" id="asNeeded">5</div><div class="as-lbl">Needed</div></div>
+      <div class="as-item"><div class="as-val" id="asPool">$47.50</div><div class="as-lbl">Prize Pool</div></div>
       <div class="as-item"><div class="as-val" id="asRound">—</div><div class="as-lbl">Round</div></div>
     </div>
   </div>
   <!-- RIGHT: Players + History -->
   <div class="side-panel">
-    <div class="sp-head">Players<span id="playerBadge" style="margin-left:auto;font-size:.72rem;font-weight:800;color:var(--indigo)">0/10</span></div>
+    <div class="sp-head">Players<span id="playerBadge" style="margin-left:auto;font-size:.72rem;font-weight:800;color:var(--indigo)">0/5</span></div>
     <div class="sp-body" style="padding:.8rem 1rem"><div class="players-list" id="playersList"></div></div>
     <div class="sp-head" style="border-top:1px solid var(--border-dim)">My History<span id="histCount" style="margin-left:auto;font-size:.7rem;color:var(--text3)">0 games</span></div>
     <div class="sp-body" style="padding:.8rem 1rem"><div class="hist-list" id="histList"><div class="hist-empty">No games played yet</div></div></div>

@@ -1,16 +1,16 @@
 /* ══════════════════════════════════════════════════
    VELOX SPIN & WIN — Real-Time Game Engine
    Socket.io powered matchmaking + server-authoritative spin
+   USDT-native balances + cookie-based auth
 ══════════════════════════════════════════════════ */
 
 /* ── Auth & Balance ── */
 const API = window.location.origin + '/api';
-const authToken = localStorage.getItem('velox_token') || null;
 let balance = 0;
 let currentUser = null;
 
 /* ── Game state ── */
-let stake = 50, maxPlayers = 10;
+let stake = 10, maxPlayers = 5;
 let players = [];
 let gameState = 'idle'; // idle | matching | countdown | spinning | result
 let roundNum = 0, histCount = 0;
@@ -29,17 +29,15 @@ let _cc = null;
 
 /* ── Init ── */
 document.addEventListener('DOMContentLoaded', async () => {
-  // Fetch user data
-  if (authToken) {
-    try {
-      const res = await fetch(API + '/me', { headers: { 'Authorization': 'Bearer ' + authToken } });
-      if (res.ok) {
-        const data = await res.json();
-        currentUser = data.user;
-        balance = data.user.balance;
-      }
-    } catch(e) { console.log('Auth check failed'); }
-  }
+  // Fetch user data via cookie-based auth
+  try {
+    const res = await fetch(API + '/me', { credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      currentUser = data.user;
+      balance = data.user.balance;
+    }
+  } catch(e) { console.log('Auth check failed'); }
   updateBalanceUI();
   updatePotUI();
   buildEmptySlots();
@@ -53,7 +51,8 @@ function connectSocket() {
 
   socket.on('connect', () => {
     document.getElementById('connDot').className = 'conn-dot connected';
-    if (authToken) socket.emit('authenticate', { token: authToken });
+    // Authenticate via cookie (send empty token, server reads cookie from handshake)
+    socket.emit('authenticate', {});
   });
   socket.on('disconnect', () => {
     document.getElementById('connDot').className = 'conn-dot disconnected';
@@ -96,7 +95,7 @@ function connectSocket() {
     }
   });
   socket.on('left_queue', (data) => {
-    showToast('👋 Left queue — ₹' + data.refunded + ' refunded');
+    showToast('👋 Left queue — $' + data.refunded + ' USDT refunded');
     resetUI();
   });
 }
@@ -108,7 +107,6 @@ function handleQueueUpdate(data) {
   const joined = data.joined;
   const needed = data.needed;
 
-  // Rebuild player slots
   buildEmptySlots();
   players.forEach((p, i) => fillSlot(i, p));
 
@@ -160,14 +158,14 @@ function handleGameEnded(data) {
   updateBalanceUI();
 }
 
-/* ── Balance ── */
-function fmtINR(v) {
-  if (v >= 1e7) return '₹'+(v/1e7).toFixed(1)+'Cr';
-  if (v >= 1e5) return '₹'+(v/1e5).toFixed(1)+'L';
-  if (v >= 1e3) return '₹'+(v/1e3).toFixed(1)+'K';
-  return '₹'+v.toFixed(0);
+/* ── Balance (USDT) ── */
+function fmtUSDT(v) {
+  if (v >= 1e6) return '$'+(v/1e6).toFixed(1)+'M';
+  if (v >= 1e3) return '$'+(v/1e3).toFixed(1)+'K';
+  if (v >= 1) return '$'+v.toFixed(2);
+  return '$'+v.toFixed(4);
 }
-function updateBalanceUI() { document.getElementById('topBalance').textContent = fmtINR(balance); }
+function updateBalanceUI() { document.getElementById('topBalance').textContent = fmtUSDT(balance); }
 
 /* ── Pot calc ── */
 function calcPot() {
@@ -177,14 +175,14 @@ function calcPot() {
 }
 function updatePotUI() {
   const { gross, fee, prize } = calcPot();
-  document.getElementById('potStake').textContent = '₹'+stake;
+  document.getElementById('potStake').textContent = '$'+stake;
   document.getElementById('potPC').textContent = maxPlayers;
-  document.getElementById('potGross').textContent = '₹'+gross;
-  document.getElementById('potFee').textContent = '₹'+fee.toFixed(0);
-  document.getElementById('potWin').textContent = '₹'+prize.toFixed(0);
-  document.getElementById('abStake').textContent = '₹'+stake;
-  document.getElementById('abPot').textContent = fmtINR(prize);
-  document.getElementById('asPool').textContent = fmtINR(prize);
+  document.getElementById('potGross').textContent = '$'+gross;
+  document.getElementById('potFee').textContent = '$'+fee.toFixed(2);
+  document.getElementById('potWin').textContent = '$'+prize.toFixed(2);
+  document.getElementById('abStake').textContent = '$'+stake;
+  document.getElementById('abPot').textContent = fmtUSDT(prize);
+  document.getElementById('asPool').textContent = fmtUSDT(prize);
   document.getElementById('asNeeded').textContent = maxPlayers;
   document.getElementById('mpTotal').textContent = maxPlayers;
 }
@@ -226,7 +224,7 @@ function fillSlot(idx, player) {
     <div class="ps-avatar" style="background:${player.color}">${initials}</div>
     <div class="ps-info">
       <div class="ps-name">${player.name}${player.isMe ? ' (You)' : ''}</div>
-      <div class="ps-stake">₹${stake} stake</div>
+      <div class="ps-stake">$${stake} USDT stake</div>
     </div>
     <span class="ps-tag ${player.isMe ? 'ps-me' : 'ps-bot'}">${player.isMe ? 'YOU' : (player.emoji||'🎲')}</span>
   `;
@@ -260,7 +258,6 @@ function findMatch() {
   document.getElementById('pcChips').style.pointerEvents = 'none';
   setStatus('Matching...');
 
-  // Emit to server
   socket.emit('join_queue', { stake, maxPlayers });
 }
 
@@ -282,7 +279,7 @@ function leaveGame() {
 }
 
 /* ══════════════════════════════════════
-   CANVAS — Wheel rendering (same as before)
+   CANVAS — Wheel rendering
 ══════════════════════════════════════ */
 function getInitials(name) { return name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase(); }
 function lighten(hex, amt) { const [r,g,b]=hexRGB(hex); return `rgb(${Math.min(255,r+(255-r)*amt)|0},${Math.min(255,g+(255-g)*amt)|0},${Math.min(255,b+(255-b)*amt)|0})`; }
@@ -300,7 +297,6 @@ function buildWheelBitmap() {
     const s=i*ARC, e=s+ARC, m=s+ARC/2;
     const p=players[i];
     let color = p.color || '#6366f1';
-    // safe color parse
     if (!color.startsWith('#')) color = '#6366f1';
     oc.beginPath(); oc.moveTo(CX,CY); oc.arc(CX,CY,R_OUT-4,s,e); oc.closePath();
     const gx=CX+Math.cos(m)*(R_OUT-4)*.6, gy=CY+Math.sin(m)*(R_OUT-4)*.6;
@@ -323,11 +319,11 @@ function buildWheelBitmap() {
     oc.fillText(getInitials(p.name),0,0); oc.restore();
     oc.save(); oc.translate(CX,CY); oc.rotate(m+Math.PI/2);
     oc.fillStyle='rgba(255,255,255,.92)';
-    oc.font=`600 ${N>25?7:(N>15?8:9)}px 'Plus Jakarta Sans',sans-serif`;
+    oc.font=`600 ${N>15?8:9}px 'Plus Jakarta Sans',sans-serif`;
     oc.textAlign='center'; oc.textBaseline='middle';
     oc.shadowColor='rgba(0,0,0,.6)'; oc.shadowBlur=3;
     const labelR=(R_OUT-4)*.32;
-    oc.fillText(p.name.split(' ')[0].slice(0,N>20?5:7),0,-labelR); oc.restore();
+    oc.fillText(p.name.split(' ')[0].slice(0,N>15?5:7),0,-labelR); oc.restore();
   }
   for(let d=0;d<180;d++){const ra=d*2*Math.PI/180;const t=(Math.sin(ra*4+.6)+1)/2;oc.beginPath();oc.arc(CX,CY,R_OUT-1,ra,ra+.038);oc.strokeStyle=`hsl(42,${68+t*32|0}%,${26+t*50|0}%)`;oc.lineWidth=4;oc.stroke();}
   const rl=oc.createLinearGradient(CX-R_OUT,CY-R_OUT,CX+R_OUT,CY+R_OUT);
@@ -391,38 +387,28 @@ function startSpinAnimation(winnerIdx, data) {
   spinActive = true;
   const TRACK_R = R_OUT - 16;
   const DROP_R = R_OUT + 55;
-  const SETTLE_R = R_OUT * 0.72; // ball settles inside the wheel
+  const SETTLE_R = R_OUT * 0.72;
   const N = players.length;
   const ARC = (2 * Math.PI) / N;
 
-  // Winner segment center in wheel-local coords
   const pocketMid = winnerIdx * ARC + ARC / 2;
-  // Add random jitter within the segment so ball doesn't always hit dead center
   const jitter = (Math.random() - 0.5) * ARC * 0.6;
   const pocketTarget = pocketMid + jitter;
 
-  // Random drop angle — ball enters from a random position around the rim
   const DROP_A = Math.random() * 2 * Math.PI - Math.PI;
-
-  // Random number of extra full rotations (6-10 full spins) for visual variety
   const extraRotations = (6 + Math.random() * 4) * 2 * Math.PI;
-  // Random spin direction offset so wheel stops at different visual positions
-  const pegAngle = -Math.PI / 2; // peg is at top
-  // Compute target so winner segment aligns under peg
+  const pegAngle = -Math.PI / 2;
   const rawTarget = pegAngle - pocketTarget;
   const targetAngle = wheelAngle + extraRotations + ((rawTarget - wheelAngle - extraRotations) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
 
-  // Ball will orbit opposite to wheel spin, then settle into the winning segment
-  // Final ball angle = where the winning segment ends up in screen coords
-  const ballExtraSpins = (4 + Math.random() * 3) * 2 * Math.PI; // ball does 4-7 orbits
-  const finalBallAngle = pegAngle + jitter; // ball stops at peg position (where winner is)
+  const ballExtraSpins = (4 + Math.random() * 3) * 2 * Math.PI;
+  const finalBallAngle = pegAngle + jitter;
 
   ballEl.style.display = 'block';
   setBall(DROP_A, DROP_R);
   ballAngle = DROP_A;
   ballRadius = DROP_R;
 
-  // Phase 1: Drop ball onto the track from random angle
   const DROP_DUR = 480;
   const t0drop = performance.now();
   function dropEase(t) { return t < .7 ? (t/.7)**2 : 1 + Math.sin((t-.7)/.3*Math.PI) * .09 * (1-(t-.7)/.3); }
@@ -436,7 +422,6 @@ function startSpinAnimation(winnerIdx, data) {
   }
   requestAnimationFrame(dropFrame);
 
-  // Phase 2: Spin wheel + ball orbits in opposite direction, ball spirals inward
   const SPIN_DUR = 5800;
   let t0spin;
   const a0 = wheelAngle;
@@ -445,21 +430,16 @@ function startSpinAnimation(winnerIdx, data) {
   function spinPhaseStart() { t0spin = performance.now(); requestAnimationFrame(spinFrame); }
   function spinFrame(now) {
     const p = Math.min((now - t0spin) / SPIN_DUR, 1);
-    const ep = 1 - Math.pow(1 - p, 4.2); // ease-out quartic
+    const ep = 1 - Math.pow(1 - p, 4.2);
 
-    // Wheel rotation
     wheelAngle = a0 + (targetAngle - a0) * ep;
     drawWheel(wheelAngle);
 
-    // Ball orbits opposite direction, decelerating
-    // Early: fast orbit on the rim. Late: slows down and spirals inward
-    const ballSpeed = (1 - p * 0.92); // decelerating
-    const currentBallAngle = ballA0 - ballExtraSpins * ep; // opposite dir orbit
-    // Blend ball angle toward final resting position in last 30% of animation
+    const ballSpeed = (1 - p * 0.92);
+    const currentBallAngle = ballA0 - ballExtraSpins * ep;
     const settleBlend = Math.max(0, (p - 0.7) / 0.3);
     const blendedAngle = currentBallAngle * (1 - settleBlend) + finalBallAngle * settleBlend;
 
-    // Ball radius: starts at track, spirals inward to settle radius
     const radiusProgress = Math.pow(p, 1.8);
     const currentRadius = TRACK_R - (TRACK_R - SETTLE_R) * radiusProgress;
 
@@ -469,7 +449,6 @@ function startSpinAnimation(winnerIdx, data) {
 
     if (p < 1) { requestAnimationFrame(spinFrame); return; }
 
-    // Final resting position
     wheelAngle = ((targetAngle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
     ballRestAngle = finalBallAngle;
     ballRestRadius = SETTLE_R;
@@ -488,18 +467,18 @@ function showResult(winnerIdx, data) {
   if(slot){slot.classList.remove('filled','me');slot.classList.add('winner');}
   document.getElementById('roTrophy').textContent = winner.isMe ? '🏆' : (winner.emoji||'🎲');
   document.getElementById('roName').textContent = winner.name + (winner.isMe ? ' (You)' : '');
-  document.getElementById('roPrize').textContent = fmtINR(prize);
-  document.getElementById('roFee').textContent = `Platform fee ₹${(fee||0).toFixed?fee.toFixed(0):fee} deducted`;
+  document.getElementById('roPrize').textContent = fmtUSDT(prize);
+  document.getElementById('roFee').textContent = `Platform fee $${(fee||0).toFixed?fee.toFixed(2):fee} deducted`;
   document.getElementById('resultOverlay').classList.add('active');
   setStatus(winner.isMe ? '🏆 You Won!' : winner.name+' Won');
   roundNum++;
   document.getElementById('asRound').textContent = '#'+roundNum;
   if (winner.isMe) {
     launchConfetti();
-    showToast('🏆 YOU WON '+fmtINR(prize)+'! Congratulations!');
+    showToast('🏆 YOU WON '+fmtUSDT(prize)+' USDT! Congratulations!');
     addHistory(true, stake, prize, maxPlayers);
   } else {
-    showToast('😔 '+winner.name+' won '+fmtINR(prize)+'. Better luck next time!');
+    showToast('😔 '+winner.name+' won '+fmtUSDT(prize)+'. Better luck next time!');
     addHistory(false, stake, 0, maxPlayers);
   }
 }
@@ -544,7 +523,7 @@ function addHistory(won,s,prize,n){
   const pnl=won?prize-s:-s;
   const el=document.createElement('div');
   el.className='hist-item '+(won?'won':'lost');
-  el.innerHTML=`<div class="hi-n">${histCount}</div><div class="hi-d">${n}p · ₹${s}</div><div class="hi-p ${pnl>=0?'pos':'neg'}">${pnl>=0?'+':''}₹${Math.abs(pnl).toFixed(0)}</div>`;
+  el.innerHTML=`<div class="hi-n">${histCount}</div><div class="hi-d">${n}p · $${s}</div><div class="hi-p ${pnl>=0?'pos':'neg'}">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(2)}</div>`;
   list.insertBefore(el,list.firstChild);
 }
 

@@ -11,6 +11,48 @@
 <style>
 /* ═══════════ LANDING PAGE — BRIGHT THEME ═══════════ */
 
+/* ── Hamburger menu ── */
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:.4rem;flex-direction:column;gap:4px}
+.hamburger span{width:22px;height:2px;background:var(--text2);border-radius:2px;transition:all .25s}
+.hamburger.open span:nth-child(1){transform:rotate(45deg) translate(4px,4px)}
+.hamburger.open span:nth-child(2){opacity:0}
+.hamburger.open span:nth-child(3){transform:rotate(-45deg) translate(4px,-4px)}
+@media(max-width:768px){
+  .hamburger{display:flex}
+  .nav-links{display:none!important;position:fixed;top:var(--header-h);left:0;right:0;background:#fff;border-bottom:1px solid var(--border-dim);flex-direction:column;padding:1rem 2rem;gap:1rem;z-index:99;box-shadow:0 8px 32px rgba(0,0,0,.1)}
+  .nav-links.mobile-open{display:flex!important}
+  .nav-inner{padding:0 1rem}
+  .nav-actions .btn-gold.btn-sm{display:none}
+  .hero-metrics{flex-wrap:wrap;gap:4px;padding:0 1rem}
+  .hero-metric{flex:1 1 30%;min-width:80px}
+  .hero-metric:first-child{border-radius:10px 0 0 0}
+  .hero-metric:last-child{border-radius:0 0 10px 0}
+  .hm-val{font-size:1.1rem}
+  .hero-title{font-size:clamp(2rem,8vw,4rem)!important;letter-spacing:-1.5px}
+  .hero-sub{font-size:.9rem}
+  .hero-cta{gap:.6rem}
+  .hero-cta .btn-lg{padding:.7rem 1.5rem;font-size:.82rem}
+  .games-grid{grid-template-columns:1fr!important}
+  .game-card.featured{grid-column:span 1!important;aspect-ratio:16/9}
+  .steps-grid{grid-template-columns:1fr 1fr}
+  .crypto-coin-grid{grid-template-columns:repeat(2,1fr)!important}
+  .modal-box{max-width:95vw!important;margin:.5rem}
+  .modal-body{padding:1rem}
+  section{padding:3rem 0}
+  .balance-pill .bp-label{display:none}
+  .user-dropdown{right:-1rem}
+}
+@media(max-width:480px){
+  .hero-metrics{gap:2px;padding:0 .6rem}
+  .hero-metric{padding:.5rem .4rem;flex:1 1 45%}
+  .hm-val{font-size:.9rem}
+  .hm-lbl{font-size:.52rem;letter-spacing:.5px}
+  .steps-grid{grid-template-columns:1fr}
+  .deposit-banner-inner{flex-direction:column;text-align:center;gap:.6rem;padding:.6rem 1rem}
+  .hero-cta{flex-direction:column;width:100%}
+  .hero-cta .btn{width:100%}
+}
+
 /* ── Nav ── */
 .nav{
   position:fixed;top:0;left:0;right:0;z-index:100;
@@ -32,7 +74,7 @@
   text-decoration:none;
 }
 .nav-links{display:flex;align-items:center;gap:2rem}
-.nav-links a{font-size:.85rem;font-weight:500;color:var(--text2);transition:color .2s}
+.nav-links a{font-size:.85rem;font-weight:500;color:var(--text2);transition:color .2s;white-space:nowrap}
 .nav-links a:hover{color:var(--indigo)}
 .nav-actions{display:flex;align-items:center;gap:.8rem}
 .user-nav{display:none;align-items:center;gap:.8rem}
@@ -300,11 +342,15 @@ footer{background:#1a1d2e;border-top:1px solid rgba(255,255,255,.06);padding:3.5
   <div class="nav-inner">
     <a href="index.html" class="nav-logo">VELOX</a>
 
-    <div class="nav-links hide-mobile">
-      <a href="#games">Games</a>
-      <a href="#how">How It Works</a>
-      <a href="#">Leaderboard</a>
-      <a href="#">Support</a>
+    <button class="hamburger" id="hamburgerBtn" onclick="toggleMobileNav()">
+      <span></span><span></span><span></span>
+    </button>
+
+    <div class="nav-links" id="navLinks">
+      <a href="#games" onclick="closeMobileNav()">Games</a>
+      <a href="#how" onclick="closeMobileNav()">How It Works</a>
+      <a href="#" onclick="closeMobileNav()">Leaderboard</a>
+      <a href="#" onclick="closeMobileNav()">Support</a>
     </div>
 
     <div class="nav-actions">
@@ -323,7 +369,7 @@ footer{background:#1a1d2e;border-top:1px solid rgba(255,255,255,.06);padding:3.5
           <span class="bp-icon">💰</span>
           <div>
             <div class="bp-label">Balance</div>
-            <div class="bp-val" id="navBalance">₹0</div>
+            <div class="bp-val" id="navBalance">$0</div>
           </div>
         </div>
         <button class="btn btn-gold btn-sm" onclick="openModal('depositModal')">+ Deposit</button>
@@ -363,7 +409,7 @@ footer{background:#1a1d2e;border-top:1px solid rgba(255,255,255,.06);padding:3.5
       </div>
     </div>
     <div class="hero-metric" style="animation-delay:.3s">
-      <div class="hm-val">₹48.6 Cr</div>
+      <div class="hm-val">$5.8M</div>
       <div class="hm-lbl">Total Paid Out</div>
     </div>
     <div class="hero-metric" style="animation-delay:.4s">
@@ -396,7 +442,7 @@ footer{background:#1a1d2e;border-top:1px solid rgba(255,255,255,.06);padding:3.5
 <!-- Deposit banner (logged-in only) -->
 <div class="deposit-banner" id="depositBanner">
   <div class="deposit-banner-inner">
-    <span class="db-text">Welcome back, <strong id="bannerName">Player</strong>! Your balance is <strong id="bannerBalance">₹0</strong>. Ready to play?</span>
+    <span class="db-text">Welcome back, <strong id="bannerName">Player</strong>! Your balance is <strong id="bannerBalance">$0</strong>. Ready to play?</span>
     <div class="db-actions">
       <button class="btn btn-gold btn-sm" onclick="openModal('depositModal')">₿ Crypto Deposit</button>
     </div>
@@ -597,17 +643,18 @@ footer{background:#1a1d2e;border-top:1px solid rgba(255,255,255,.06);padding:3.5
 
       <!-- Amount -->
       <div class="field">
-        <label>Amount (USD)</label>
+        <label>Amount (USDT)</label>
         <div style="display:flex;gap:.5rem;margin-bottom:.5rem;flex-wrap:wrap">
           <button class="btn btn-ghost btn-sm" onclick="setAmt('depAmt',10)">$10</button>
           <button class="btn btn-ghost btn-sm" onclick="setAmt('depAmt',25)">$25</button>
           <button class="btn btn-ghost btn-sm" onclick="setAmt('depAmt',50)">$50</button>
           <button class="btn btn-ghost btn-sm" onclick="setAmt('depAmt',100)">$100</button>
           <button class="btn btn-ghost btn-sm" onclick="setAmt('depAmt',500)">$500</button>
+          <button class="btn btn-ghost btn-sm" onclick="setAmt('depAmt',1000)">$1K</button>
         </div>
-        <input type="number" id="depAmt" placeholder="Enter USD amount..." min="1" step="1">
+        <input type="number" id="depAmt" placeholder="Enter USDT amount..." min="1" step="1">
       </div>
-      <div style="font-size:.75rem;color:var(--text3);margin-bottom:.8rem;text-align:center" id="depConversion">≈ ₹0 will be credited</div>
+      <div style="font-size:.75rem;color:var(--text3);margin-bottom:.8rem;text-align:center" id="depConversion">$0 USDT will be credited</div>
       <button class="btn btn-gold btn-full" id="depConfirmBtn" onclick="confirmDeposit()">Confirm Deposit</button>
       <div style="text-align:center;font-size:.72rem;color:var(--text4);margin-top:.8rem">Instant · Zero fees · Provably secure</div>
     </div>
@@ -624,7 +671,7 @@ footer{background:#1a1d2e;border-top:1px solid rgba(255,255,255,.06);padding:3.5
     <div class="modal-body">
       <div style="display:flex;justify-content:space-between;padding:.8rem 1rem;background:var(--indigo5);border:1px solid var(--border);border-radius:10px;margin-bottom:1.2rem">
         <span style="font-size:.8rem;color:var(--text3)">Available Balance</span>
-        <span id="withAvail" style="font-size:.95rem;font-weight:700;color:var(--indigo)">₹0</span>
+        <span id="withAvail" style="font-size:.95rem;font-weight:700;color:var(--indigo)">$0</span>
       </div>
 
       <!-- Coin selector -->
@@ -651,14 +698,14 @@ footer{background:#1a1d2e;border-top:1px solid rgba(255,255,255,.06);padding:3.5
         <input type="text" id="withAddr" placeholder="Enter your wallet address...">
       </div>
       <div class="field">
-        <label>Amount (₹)</label>
+        <label>Amount (USDT)</label>
         <div style="display:flex;gap:.5rem;margin-bottom:.5rem;flex-wrap:wrap">
-          <button class="btn btn-ghost btn-sm" onclick="setAmt('withAmt',500)">₹500</button>
-          <button class="btn btn-ghost btn-sm" onclick="setAmt('withAmt',1000)">₹1K</button>
-          <button class="btn btn-ghost btn-sm" onclick="setAmt('withAmt',5000)">₹5K</button>
+          <button class="btn btn-ghost btn-sm" onclick="setAmt('withAmt',50)">$50</button>
+          <button class="btn btn-ghost btn-sm" onclick="setAmt('withAmt',100)">$100</button>
+          <button class="btn btn-ghost btn-sm" onclick="setAmt('withAmt',500)">$500</button>
           <button class="btn btn-ghost btn-sm" onclick="setWithMax()">MAX</button>
         </div>
-        <input type="number" id="withAmt" placeholder="Enter amount in ₹...">
+        <input type="number" id="withAmt" placeholder="Enter USDT amount...">
       </div>
       <div style="font-size:.75rem;color:var(--text3);margin-bottom:.8rem;text-align:center" id="withConversion">≈ 0 BTC will be sent</div>
       <button class="btn btn-danger btn-full" onclick="confirmWithdraw()">Withdraw Now</button>
@@ -669,10 +716,10 @@ footer{background:#1a1d2e;border-top:1px solid rgba(255,255,255,.06);padding:3.5
 <script>
 /* ══════════════════════════════════════════
    VELOX — Landing Page Script (Server-Backed)
+   Cookie-based auth + USDT-native
 ══════════════════════════════════════════ */
 
 const API = window.location.origin + '/api';
-let authToken = localStorage.getItem('velox_token') || null;
 let currentUser = null;
 let userBalance = 0;
 let socket = null;
@@ -690,22 +737,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   animateLivePlayers();
   fetchCryptoConfig();
 
-  // Auto-login if token exists
-  if (authToken) {
-    try {
-      const res = await fetch(API + '/me', { headers: { 'Authorization': 'Bearer ' + authToken } });
-      if (res.ok) {
-        const data = await res.json();
-        currentUser = data.user;
-        userBalance = data.user.balance;
-        updateAuthUI();
-      } else {
-        localStorage.removeItem('velox_token');
-        authToken = null;
-      }
-    } catch (e) {
-      console.log('Auto-login failed:', e);
+  // Auto-login via cookie
+  try {
+    const res = await fetch(API + '/me', { credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      currentUser = data.user;
+      userBalance = data.user.balance;
+      updateAuthUI();
     }
+  } catch (e) {
+    console.log('Auto-login failed:', e);
   }
 
   connectSocket();
@@ -722,9 +764,8 @@ function connectSocket() {
   socket.on('connect', () => {
     document.getElementById('connDot').className = 'conn-dot connected';
     document.getElementById('connDot').title = 'Connected to server';
-    if (authToken) {
-      socket.emit('authenticate', { token: authToken });
-    }
+    // Auth via cookie (server reads from handshake headers)
+    socket.emit('authenticate', {});
   });
 
   socket.on('disconnect', () => {
@@ -778,10 +819,10 @@ function updateBalanceDisplay() {
 }
 
 function formatCurrency(v) {
-  if (v >= 10000000) return '₹' + (v / 10000000).toFixed(1) + 'Cr';
-  if (v >= 100000) return '₹' + (v / 100000).toFixed(1) + 'L';
-  if (v >= 1000) return '₹' + (v / 1000).toFixed(1) + 'K';
-  return '₹' + v.toFixed(2);
+  if (v >= 1e6) return '$' + (v / 1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return '$' + (v / 1e3).toFixed(1) + 'K';
+  if (v >= 1) return '$' + v.toFixed(2);
+  return '$' + v.toFixed(4);
 }
 
 /* ── Register ── */
@@ -802,18 +843,17 @@ async function doRegister() {
     const res = await fetch(API + '/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ firstName: first, lastName: last, email, username: uname, password: pass })
     });
     const data = await res.json();
     if (!res.ok) { showToast('⚠ ' + data.error); return; }
 
-    authToken = data.token;
-    localStorage.setItem('velox_token', authToken);
     currentUser = data.user;
     userBalance = data.user.balance;
 
-    // Authenticate socket
-    if (socket) socket.emit('authenticate', { token: authToken });
+    // Authenticate socket via cookie
+    if (socket) socket.emit('authenticate', {});
 
     closeModal('registerModal');
     updateAuthUI();
@@ -838,17 +878,16 @@ async function doLogin() {
     const res = await fetch(API + '/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ identifier: id, password: pass })
     });
     const data = await res.json();
     if (!res.ok) { showToast('⚠ ' + data.error); return; }
 
-    authToken = data.token;
-    localStorage.setItem('velox_token', authToken);
     currentUser = data.user;
     userBalance = data.user.balance;
 
-    if (socket) socket.emit('authenticate', { token: authToken });
+    if (socket) socket.emit('authenticate', {});
 
     closeModal('loginModal');
     updateAuthUI();
@@ -861,9 +900,8 @@ async function doLogin() {
 }
 
 /* ── Logout ── */
-function logout() {
-  localStorage.removeItem('velox_token');
-  authToken = null;
+async function logout() {
+  try { await fetch(API + '/logout', { method: 'POST', credentials: 'include' }); } catch(e) {}
   currentUser = null;
   userBalance = 0;
   location.reload();
@@ -901,8 +939,7 @@ function updateDepositAddress() {
 
 function updateDepConversion() {
   const amt = parseFloat(document.getElementById('depAmt').value) || 0;
-  const inr = amt * 83; // USD to INR
-  document.getElementById('depConversion').textContent = `≈ ₹${inr.toLocaleString('en-IN')} will be credited`;
+  document.getElementById('depConversion').textContent = `$${amt.toFixed(2)} USDT will be credited`;
 }
 
 function copyCryptoAddr() {
@@ -922,8 +959,9 @@ async function confirmDeposit() {
   try {
     const res = await fetch(API + '/deposit', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
-      body: JSON.stringify({ coin: selectedDepositCoin, amountUSD: amt })
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ coin: selectedDepositCoin, amountUSDT: amt })
     });
     const data = await res.json();
     if (!res.ok) { showToast('⚠ ' + data.error); return; }
@@ -950,10 +988,9 @@ function selectWithdrawCoin(coin) {
 
 function updateWithConversion() {
   const amt = parseFloat(document.getElementById('withAmt').value) || 0;
-  const usd = amt / 83;
   let cryptoAmt = 0;
   if (cryptoConfig && cryptoConfig[selectedWithdrawCoin]) {
-    cryptoAmt = usd / cryptoConfig[selectedWithdrawCoin].usdRate;
+    cryptoAmt = amt / cryptoConfig[selectedWithdrawCoin].usdRate;
   }
   document.getElementById('withConversion').textContent = `≈ ${cryptoAmt.toFixed(6)} ${selectedWithdrawCoin} will be sent`;
 }
@@ -968,14 +1005,15 @@ async function confirmWithdraw() {
   const addr = document.getElementById('withAddr').value.trim();
   const amt  = parseFloat(document.getElementById('withAmt').value);
   if (!addr) { showToast('⚠ Enter your wallet address'); return; }
-  if (!amt || amt < 100) { showToast('⚠ Minimum withdrawal ₹100'); return; }
+  if (!amt || amt < 5) { showToast('⚠ Minimum withdrawal $5 USDT'); return; }
   if (amt > userBalance) { showToast('⚠ Insufficient balance'); return; }
 
   try {
     const res = await fetch(API + '/withdraw', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
-      body: JSON.stringify({ coin: selectedWithdrawCoin, amountINR: amt, walletAddress: addr })
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ coin: selectedWithdrawCoin, amountUSDT: amt, walletAddress: addr })
     });
     const data = await res.json();
     if (!res.ok) { showToast('⚠ ' + data.error); return; }
@@ -1078,6 +1116,16 @@ function showToast(msg) {
 /* ── Nav helpers ── */
 function goProfile() { showToast('👤 Profile page — coming soon'); }
 function goHistory() { showToast('📋 History — coming soon'); }
+
+/* ── Mobile hamburger ── */
+function toggleMobileNav() {
+  document.getElementById('navLinks').classList.toggle('mobile-open');
+  document.getElementById('hamburgerBtn').classList.toggle('open');
+}
+function closeMobileNav() {
+  document.getElementById('navLinks').classList.remove('mobile-open');
+  document.getElementById('hamburgerBtn').classList.remove('open');
+}
 </script>
 </body>
 </html>
