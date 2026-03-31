@@ -381,150 +381,92 @@ function stageCoords() {
 }
 window.addEventListener('resize',()=>{_cc=null;if(ballRestAngle!==null)setBall(ballRestAngle,ballRestRadius);});
 function setBall(a,r){const{cx,cy,sx,sy}=stageCoords();ballEl.style.left=(cx+Math.cos(a)*r*sx)+'px';ballEl.style.top=(cy+Math.sin(a)*r*sy)+'px';}
-function setHand(a,r){
-  const el=document.getElementById('handEl');
-  if(el.style.display==='none')return;
-  const{cx,cy,sx,sy}=stageCoords();
-  el.style.left=(cx+Math.cos(a)*r*sx - 15)+'px';
-  el.style.top=(cy+Math.sin(a)*r*sy - 30)+'px';
-}
 
 /* ── Spin animation (triggered by server result) ── */
 function startSpinAnimation(winnerIdx, data) {
   spinActive = true;
   const TRACK_R = R_OUT - 12; // Outer ball track
-  const DROP_R = R_OUT + 45;  // Height where hand drops it
+  const DROP_R = R_OUT + 45;  
   const SETTLE_R = R_OUT * 0.72; // Inner pocket
   const N = players.length;
   const ARC = (2 * Math.PI) / N;
 
-  // Wheel target
   const pocketMid = winnerIdx * ARC + ARC / 2;
   const jitter = (Math.random() - 0.5) * ARC * 0.6;
   const pocketTarget = pocketMid + jitter;
   
-  // Realism: The wheel spins clockwise, ball drops and spins counter-clockwise initially.
-  const WHEEL_SPINS = 6 + Math.random() * 2; // Wheel spins 6-8 times
-  const pegAngle = -Math.PI / 2; // 12 o'clock
+  const WHEEL_SPINS = 6 + Math.random() * 2; 
+  const pegAngle = -Math.PI / 2; 
   const rawTarget = pegAngle - pocketTarget;
-  // Wheel moves positively (clockwise)
   const targetAngle = wheelAngle + (WHEEL_SPINS * 2 * Math.PI) + ((rawTarget - wheelAngle) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
 
-  // Ball drops at a random angle
   const DROP_A = Math.random() * 2 * Math.PI;
   ballEl.style.display = 'block';
-  
-  // Hand animation
-  const handEl = document.getElementById('handEl');
-  handEl.style.display = 'block';
-  handEl.style.opacity = '0';
-  handEl.style.transform = 'scale(1.5)';
-  setHand(DROP_A, DROP_R);
-  setBall(DROP_A, DROP_R);
   ballEl.style.opacity = '0';
+  ballAngle = DROP_A;
+  ballRadius = TRACK_R;
+  setBall(ballAngle, ballRadius);
 
-  let phase = 'hand_in';
-  const t0 = performance.now();
-  const HAND_IN_DUR = 400;
-  const HAND_OUT_DUR = 300;
+  const SPIN_DUR = 10500; 
+  const BALL_REVS_OPPOSITE = -(5 + Math.random() * 2); 
+  const BALL_DROP_START_PCT = 0.55; 
+  const BALL_LOCK_PCT = 0.85; 
+
+  let t0spin = performance.now();
   
-  // Physics config
-  const SPIN_DUR = 10500; // 10.5 seconds for realistic long roulette spin
-  const BALL_REVS_OPPOSITE = -(5 + Math.random() * 2); // Spins CCW 5-7 times before friction catches it
-  const BALL_BOUNCE_START_PCT = 0.55; // Ball starts dropping to inner track at 55% of duration
-  const BALL_LOCK_START_PCT = 0.85; // Ball fully locks into pocket movement at 85%
+  // Calculate exact lock positions to avoid wrapping glitches
+  const lockWheelEase = 1 - Math.pow(1 - BALL_LOCK_PCT, 3.5);
+  const lockWheelAngle = wheelAngle + (targetAngle - wheelAngle) * lockWheelEase;
+  const lockPocketAbsolute = lockWheelAngle + pocketTarget;
+  
+  // The ball spins CCW. It starts at DROP_A and goes to DROP_A + BALL_REVS_OPPOSITE * 2PI
+  // Let's make it so by BALL_LOCK_PCT, the ball's absolute angle has perfectly aligned with lockPocketAbsolute.
+  // We want the ball to spin CCW. So its final angle should be less than DROP_A.
+  let finalBallAngle = lockPocketAbsolute;
+  // Unwrap finalBallAngle so that it is less than DROP_A, and represents about 5-7 revolutions backward
+  while(finalBallAngle > DROP_A) finalBallAngle -= 2*Math.PI;
+  while(Math.abs(finalBallAngle - DROP_A) < 4 * 2*Math.PI) finalBallAngle -= 2*Math.PI;
 
   function spinFrame(now) {
-    // 1. Hand Drop Sequence
-    if (phase === 'hand_in') {
-      const p = Math.min((now - t0) / HAND_IN_DUR, 1);
-      handEl.style.opacity = p;
-      handEl.style.transform = `scale(${1.5 - p*0.5})`;
-      if (p === 1) {
-        phase = 'hand_out';
-        ballEl.style.opacity = '1';
-        ballAngle = DROP_A;
-        ballRadius = TRACK_R;
-        setBall(ballAngle, ballRadius);
-      }
-      requestAnimationFrame(spinFrame);
-      return;
-    }
-    
-    if (phase === 'hand_out') {
-      const outTime = now - (t0 + HAND_IN_DUR);
-      const p = Math.min(outTime / HAND_OUT_DUR, 1);
-      handEl.style.opacity = 1 - p;
-      handEl.style.transform = `translateY(${-p*20}px) scale(1)`;
-      if (p === 1) {
-        handEl.style.display = 'none';
-        phase = 'spin';
-        // Reset spin start time to exactly now
-        t0spin = now;
-      }
-    }
-
-    if (phase !== 'spin') {
-      requestAnimationFrame(spinFrame);
-      return;
-    }
-
-    // 2. Main Spin Physics Sequence
     const elapsed = now - t0spin;
     const p = Math.min(elapsed / SPIN_DUR, 1);
     
-    // Wheel decel curve: fast start, long slow tail
-    // Using a custom ease-out that mimics real friction
-    // f(t) = 1 - (1-t)^3
+    // Fade ball in at the very start
+    if (p < 0.05) {
+      ballEl.style.opacity = p / 0.05;
+    } else {
+      ballEl.style.opacity = '1';
+    }
+
+    // Wheel decel curve
     const wheelEase = 1 - Math.pow(1 - p, 3.5);
     const currentWheelAngle = wheelAngle + (targetAngle - wheelAngle) * wheelEase;
     drawWheel(currentWheelAngle);
 
-    // Ball kinematics
-    // Phase A (0 to bounce_start): Ball spins backwards along the rim
-    // Phase B (bounce_start to lock_start): Ball loses momentum, bounces inwards
-    // Phase C (lock_start to 1): Ball is locked in the pocket turning with the wheel
-
     let currentBallA, currentBallR;
 
-    if (p < BALL_BOUNCE_START_PCT) {
-      // Phase A: Fast opposite spinning
-      const localP = p / BALL_BOUNCE_START_PCT;
-      const easeVelocity = localP * (2 - localP); // ease-out quad for CCW spin speed
-      currentBallA = DROP_A + (BALL_REVS_OPPOSITE * 2 * Math.PI) * easeVelocity;
-      currentBallR = TRACK_R;
-    } else if (p < BALL_LOCK_START_PCT) {
-      // Phase B: Bouncing inwards
-      const localP = (p - BALL_BOUNCE_START_PCT) / (BALL_LOCK_START_PCT - BALL_BOUNCE_START_PCT);
-      // Ball angle transitions from its fast CCW spin to matching the pocket's clockwise spin
-      // We need to calculate where the pocket is currently
-      const currentPocketAbsolute = currentWheelAngle + pocketTarget;
+    if (p < BALL_LOCK_PCT) {
+      // Ball is free spinning and dropping
+      const localP = p / BALL_LOCK_PCT;
       
-      // Where did Phase A leave the ball?
-      const phaseAEndAngle = DROP_A + (BALL_REVS_OPPOSITE * 2 * Math.PI);
+      // Angle: ease-out quad so it slows down as it approaches lock
+      const angleEase = localP * (2 - localP);
+      currentBallA = DROP_A + (finalBallAngle - DROP_A) * angleEase;
       
-      // Interpolate angle
-      // Easing: starts slow, accelerates into the pocket
-      const angleEase = Math.pow(localP, 2.5);
-      
-      // Handle wrapping so it always takes the shortest path into the pocket
-      let angDiff = (currentPocketAbsolute - phaseAEndAngle) % (2*Math.PI);
-      if (angDiff < -Math.PI) angDiff += 2*Math.PI;
-      if (angDiff > Math.PI) angDiff -= 2*Math.PI;
-      
-      currentBallA = phaseAEndAngle + angDiff * angleEase;
-
-      // Add realistic bouncing to radius
-      // It hits the frets and bounces up and down before settling
-      const bounceFreq = 6; // Number of bounces
-      const dampening = 1 - localP; // Bounces get smaller
-      const bounce = Math.abs(Math.sin(localP * Math.PI * bounceFreq)) * 30 * dampening;
-      
-      // Base radius drops from TRACK to SETTLE
-      const baseR = TRACK_R - (TRACK_R - SETTLE_R) * Math.pow(localP, 1.5);
-      currentBallR = baseR + bounce;
+      // Radius: Stays on TRACK until DROP_START, then bounces inward
+      if (p < BALL_DROP_START_PCT) {
+        currentBallR = TRACK_R;
+      } else {
+        const dropP = (p - BALL_DROP_START_PCT) / (BALL_LOCK_PCT - BALL_DROP_START_PCT);
+        // Bouncing
+        const bounceFreq = 5;
+        const dampening = 1 - dropP;
+        const bounce = Math.abs(Math.sin(dropP * Math.PI * bounceFreq)) * 25 * dampening;
+        const baseR = TRACK_R - (TRACK_R - SETTLE_R) * Math.pow(dropP, 1.5);
+        currentBallR = baseR + bounce;
+      }
     } else {
-      // Phase C: Locked in pocket, moving with the wheel
+      // Locked in pocket
       currentBallA = currentWheelAngle + pocketTarget;
       currentBallR = SETTLE_R;
     }
@@ -536,7 +478,6 @@ function startSpinAnimation(winnerIdx, data) {
     if (p < 1) {
       requestAnimationFrame(spinFrame);
     } else {
-      // Finish
       wheelAngle = currentWheelAngle % (2 * Math.PI);
       ballRestAngle = wheelAngle + pocketTarget;
       ballRestRadius = SETTLE_R;
@@ -545,8 +486,6 @@ function startSpinAnimation(winnerIdx, data) {
       showResult(winnerIdx, data);
     }
   }
-  
-  let t0spin = performance.now();
   requestAnimationFrame(spinFrame);
 }
 
@@ -578,7 +517,7 @@ function showResult(winnerIdx, data) {
 /* ── Reset ── */
 function resetGame() {
   gameState='idle'; spinActive=false; players=[]; wheelAngle=0;
-  ballRestAngle=null; ballEl.style.display='none'; document.getElementById('handEl').style.display='none';
+  ballRestAngle=null; ballEl.style.display='none'; 
   offWheel=null; offAxle=null; currentRoomId=null;
   document.getElementById('resultOverlay').classList.remove('active');
   document.getElementById('cdOverlay').classList.remove('active');
@@ -594,7 +533,7 @@ function resetGame() {
 function resetUI() {
   // Only called when backing out early, NOT at the end of a game
   if (gameState !== 'result') {
-    ballRestAngle=null; ballEl.style.display='none'; document.getElementById('handEl').style.display='none';
+    ballRestAngle=null; ballEl.style.display='none'; 
     wheelAngle=0;
   }
   gameState='idle'; players=[]; offWheel=null; offAxle=null;
