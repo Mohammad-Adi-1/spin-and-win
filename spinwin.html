@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spin & Win — VELOX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="style.css">
+<script src="/socket.io/socket.io.js"></script>
+<style>
+body{background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
+.top-bar{height:var(--header-h);display:flex;align-items:center;background:#fff;border-bottom:1px solid var(--border-dim);padding:0 2rem;gap:1.5rem;position:sticky;top:0;z-index:100;flex-shrink:0;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+.tb-back{display:flex;align-items:center;gap:.45rem;font-size:.82rem;font-weight:600;color:var(--text3);cursor:pointer;transition:color .18s;border:none;background:none}
+.tb-back:hover{color:var(--indigo)}
+.tb-logo{font-size:1.3rem;font-weight:800;letter-spacing:-1px;background:linear-gradient(135deg,var(--indigo),var(--violet2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-right:auto}
+.tb-game-name{font-size:.78rem;font-weight:600;color:var(--text3)}
+.tb-balance{display:flex;align-items:center;gap:.55rem;padding:.38rem .9rem;border-radius:8px;background:var(--indigo5);border:1.5px solid var(--border)}
+.tb-balance .tbb-l{font-size:.6rem;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text3)}
+.tb-balance .tbb-v{font-size:.9rem;font-weight:700;color:var(--indigo)}
+.conn-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:.4rem;transition:background .3s}
+.conn-dot.connected{background:#4ade80;box-shadow:0 0 6px rgba(74,222,128,.5)}
+.conn-dot.disconnected{background:#ef4444;box-shadow:0 0 6px rgba(239,68,68,.5)}
+.game-layout{flex:1;display:grid;grid-template-columns:290px 1fr 290px;gap:0;height:calc(100vh - var(--header-h));overflow:hidden}
+@media(max-width:1100px){.game-layout{grid-template-columns:240px 1fr 240px}}
+@media(max-width:860px){.game-layout{grid-template-columns:1fr;height:auto;overflow:visible}body{overflow-x:hidden}}
+.side-panel{background:#fff;border-right:1px solid var(--border-dim);display:flex;flex-direction:column;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--indigo3) transparent;height:100%}
+.side-panel:last-child{border-right:none;border-left:1px solid var(--border-dim)}
+.side-panel::-webkit-scrollbar{width:3px}
+.side-panel::-webkit-scrollbar-thumb{background:var(--indigo3);border-radius:3px}
+.sp-head{padding:.85rem 1.2rem .7rem;border-bottom:1px solid var(--border-dim);display:flex;align-items:center;gap:.6rem;font-size:.7rem;font-weight:700;letter-spacing:.5px;color:var(--text2);text-transform:uppercase;flex-shrink:0;background:var(--bg4);position:sticky;top:0;z-index:5}
+.sp-head::before{content:'';width:3px;height:14px;border-radius:2px;background:linear-gradient(180deg,var(--indigo),var(--violet2));flex-shrink:0}
+.sp-body{padding:1rem 1.2rem;flex:1}
+.stake-chips{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:.7rem}
+.s-chip{padding:.5rem .3rem;border-radius:10px;background:var(--bg4);border:1.5px solid var(--border-dim);text-align:center;cursor:pointer;transition:all .18s;font-weight:700;color:var(--text2)}
+.s-chip:hover{border-color:var(--indigo3);color:var(--indigo);background:var(--indigo5)}
+.s-chip.active{border-color:var(--indigo2);color:var(--indigo);background:var(--indigo5);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+.s-chip .sc-label{font-size:.54rem;color:var(--text4);font-weight:600;display:block;margin-bottom:1px;text-transform:uppercase;letter-spacing:.5px}
+.s-chip .sc-val{font-size:.95rem;font-weight:800}
+.pc-chips{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-bottom:.7rem}
+.pc-chip{padding:.5rem .2rem;border-radius:10px;background:var(--bg4);border:1.5px solid var(--border-dim);text-align:center;cursor:pointer;transition:all .18s;font-size:.85rem;font-weight:700;color:var(--text2)}
+.pc-chip:hover,.pc-chip.active{border-color:var(--indigo2);color:var(--indigo);background:var(--indigo5)}
+.pc-chip .pcc-label{font-size:.52rem;color:var(--text4);font-weight:600;display:block;margin-bottom:1px;text-transform:uppercase;letter-spacing:.5px}
+.pot-box{padding:.7rem .9rem;border-radius:12px;background:linear-gradient(135deg,var(--indigo5),#fff);border:1.5px solid var(--border);margin-bottom:.7rem}
+.pot-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:.28rem;font-size:.8rem}
+.pot-row:last-child{margin-bottom:0;padding-top:.35rem;border-top:1px solid var(--border-dim)}
+.pot-lbl{font-weight:600;color:var(--text3)}.pot-val{font-weight:700;color:var(--text)}
+.pot-val.big{font-size:1.15rem;font-weight:800;color:var(--indigo)}
+.btn-find{width:100%;padding:.85rem;border-radius:12px;font-size:.85rem;font-weight:700;border:none;cursor:pointer;transition:all .2s;background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;box-shadow:0 3px 14px rgba(5,150,105,.3)}
+.btn-find:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 5px 20px rgba(5,150,105,.45)}
+.btn-find:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+.btn-leave{width:100%;padding:.7rem;border-radius:12px;font-size:.8rem;font-weight:700;border:1.5px solid rgba(220,38,38,.25);cursor:pointer;background:var(--red3);color:var(--red);transition:all .18s;display:none;margin-top:.4rem}
+.btn-leave:hover{background:#fecaca;border-color:var(--red2)}
+.match-progress{padding:.7rem .9rem;border-radius:10px;background:var(--indigo5);border:1px solid var(--border);margin-bottom:.7rem;display:none}
+.match-progress.active{display:block}
+.mp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem}
+.mp-title{font-size:.7rem;font-weight:700;color:var(--indigo);letter-spacing:.3px}
+.mp-count{font-size:.78rem;font-weight:800;color:var(--indigo)}
+.mp-bar-track{height:6px;background:var(--indigo4);border-radius:4px;overflow:hidden;margin-bottom:.35rem}
+.mp-bar-fill{height:100%;background:linear-gradient(90deg,var(--indigo),var(--violet2));border-radius:4px;transition:width .3s var(--ease-out-expo);width:0%}
+.mp-status{font-size:.7rem;font-weight:600;color:var(--text3)}
+.sl{font-size:.68rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem}
+.arena{background:linear-gradient(160deg,var(--bg2),#fff);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.2rem 1.5rem 1.5rem;gap:1rem;position:relative;overflow-y:auto;overflow-x:hidden}
+.arena::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 50% at 50% 40%,rgba(79,70,229,.06) 0%,transparent 65%);pointer-events:none;z-index:0}
+.arena-bar{width:100%;max-width:460px;padding:.7rem 1.2rem;border-radius:12px;background:#fff;border:1px solid var(--border-dim);display:flex;align-items:center;justify-content:space-between;gap:1rem;box-shadow:0 1px 6px rgba(0,0,0,.04);flex-shrink:0}
+.ab-item{display:flex;flex-direction:column;align-items:center;gap:1px}
+.ab-val{font-size:.92rem;font-weight:800;color:var(--text)}
+.ab-lbl{font-size:.6rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text4)}
+.wheel-wrap{position:relative;width:min(440px,84vw);height:min(440px,84vw);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rim-outer{position:absolute;inset:-18px;border-radius:50%;z-index:0;background:conic-gradient(#3a2000 0deg,#8B6914 15deg,#FFD700 30deg,#fffacd 45deg,#FFD700 60deg,#c68a00 80deg,#8B6914 100deg,#FFD700 120deg,#fffacd 140deg,#FFD700 160deg,#B8860B 180deg,#5c3a00 200deg,#8B6914 220deg,#FFD700 240deg,#fffacd 260deg,#FFD700 280deg,#c68a00 300deg,#B8860B 320deg,#FFD700 340deg,#5c3a00 360deg);box-shadow:0 10px 40px rgba(0,0,0,.2),inset 0 2px 8px rgba(255,255,255,.25)}
+.rim-gap{position:absolute;inset:-8px;border-radius:50%;z-index:1;background:var(--bg2)}
+.rim-ring{position:absolute;inset:-2px;border-radius:50%;z-index:1;border:2px solid rgba(255,215,0,.5)}
+.peg{position:absolute;top:-10px;left:50%;transform:translateX(-50%);z-index:25;display:flex;flex-direction:column;align-items:center}
+.peg-tri{width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:30px solid #FFD700;filter:drop-shadow(0 4px 8px rgba(255,180,0,.6))}
+.peg-base{width:22px;height:10px;margin-top:-4px;background:radial-gradient(circle at 50% 30%,#fffacd,#c68a00);border-radius:3px 3px 8px 8px;margin-left:-1px}
+#spinCanvas{position:relative;z-index:2;border-radius:50%;display:block;filter:drop-shadow(0 8px 24px rgba(0,0,0,.18));will-change:transform}
+#ballEl{position:absolute;z-index:15;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.95) 0%,rgba(255,255,255,.3) 22%,transparent 50%),radial-gradient(circle at 50% 50%,#f0f0f0 0%,#d0d0d0 40%,#888 75%,#444 100%);box-shadow:0 4px 10px rgba(0,0,0,.4),inset 0 -1px 3px rgba(0,0,0,.2);transform:translate(-50%,-50%);pointer-events:none;display:none;will-change:left,top}
+.cd-overlay{position:absolute;inset:0;z-index:20;border-radius:50%;background:rgba(238,240,248,.88);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;flex-direction:column;gap:.4rem}
+.cd-overlay.active{display:flex;animation:cd-pop .3s var(--ease-out-expo)}
+@keyframes cd-pop{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:none}}
+.cd-num{font-size:5rem;font-weight:800;color:var(--indigo);line-height:1;animation:cd-tick .9s ease-in-out infinite}
+@keyframes cd-tick{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.cd-label{font-size:.72rem;font-weight:700;color:var(--text3);letter-spacing:2px;text-transform:uppercase}
+.cd-sub{font-size:.82rem;font-weight:600;color:var(--text2);margin-top:.2rem}
+.result-overlay{position:absolute;inset:0;z-index:22;border-radius:50%;background:rgba(238,240,248,.93);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;flex-direction:column;gap:.4rem;text-align:center;padding:2rem}
+.result-overlay.active{display:flex;animation:cd-pop .35s var(--ease-out-expo)}
+.ro-trophy{font-size:2.5rem;line-height:1;margin-bottom:.2rem}
+.ro-name{font-size:1.5rem;font-weight:800;color:var(--text);letter-spacing:-.3px;line-height:1.2}
+.ro-wins-label{font-size:.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3)}
+.ro-prize{font-size:2rem;font-weight:800;color:var(--green);line-height:1}
+.ro-fee{font-size:.72rem;color:var(--text4);margin-bottom:.4rem}
+.arena-strip{width:100%;max-width:460px;padding:.7rem 1.2rem;border-radius:12px;background:#fff;border:1px solid var(--border-dim);box-shadow:0 1px 6px rgba(0,0,0,.04);display:flex;align-items:center;justify-content:space-between;font-size:.8rem;flex-shrink:0;gap:.5rem}
+.as-item{display:flex;flex-direction:column;align-items:center;gap:1px}
+.as-val{font-weight:800;font-size:.9rem;color:var(--text)}
+.as-lbl{font-size:.58rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text4)}
+.players-list{display:flex;flex-direction:column;gap:.4rem}
+.player-slot{display:flex;align-items:center;gap:.7rem;padding:.55rem .75rem;border-radius:10px;background:var(--bg4);border:1.5px solid var(--border-dim);font-size:.82rem;transition:border-color .2s,background .2s}
+.player-slot.filled{background:#fff;border-color:var(--border-dim2);animation:slot-in .25s var(--ease-out-expo)}
+.player-slot.me{border-color:var(--indigo2);background:var(--indigo5)}
+.player-slot.winner{border-color:rgba(5,150,105,.4);background:var(--green3);animation:winner-glow 1s ease-in-out 3}
+@keyframes slot-in{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
+@keyframes winner-glow{0%,100%{box-shadow:0 0 0 rgba(5,150,105,0)}50%{box-shadow:0 0 14px rgba(5,150,105,.35)}}
+.ps-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;color:#fff}
+.ps-empty-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;background:var(--border-dim);display:flex;align-items:center;justify-content:center}
+.ps-info{flex:1;min-width:0}
+.ps-name{font-size:.82rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ps-stake{font-size:.68rem;color:var(--text3);font-weight:500}
+.ps-empty-name{font-size:.78rem;color:var(--text4);font-weight:500;font-style:italic}
+.ps-tag{font-size:.62rem;font-weight:700;padding:.15rem .5rem;border-radius:4px;flex-shrink:0}
+.ps-me{background:var(--indigo5);color:var(--indigo)}
+.ps-bot{background:var(--bg2);color:var(--text4)}
+.ps-win{background:var(--green3);color:var(--green);font-size:.72rem}
+.hist-list{display:flex;flex-direction:column;gap:.4rem}
+.hist-item{display:flex;align-items:center;gap:.6rem;padding:.48rem .65rem;border-radius:8px;background:var(--bg4);border:1px solid var(--border-dim);font-size:.78rem;animation:slot-in .22s ease}
+.hist-item.won{border-color:rgba(5,150,105,.25);background:var(--green3)}
+.hist-item.lost{opacity:.55}
+.hi-n{min-width:18px;font-size:.65rem;font-weight:600;color:var(--text4)}
+.hi-d{flex:1;color:var(--text2);font-weight:500}
+.hi-p{font-weight:700}.hi-p.pos{color:var(--green)}.hi-p.neg{color:var(--red)}
+.hist-empty{text-align:center;padding:1.8rem;color:var(--text4);font-size:.78rem;font-weight:500}
+.cfp{position:fixed;top:0;pointer-events:none;z-index:999;animation:cffall linear forwards;border-radius:2px}
+@keyframes cffall{0%{opacity:1;transform:translateY(-10px) rotate(0)}100%{opacity:0;transform:translateY(100vh) rotate(800deg)}}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <button class="tb-back" onclick="window.location.href='index.html'">← Back</button>
+  <span class="tb-logo">VELOX</span>
+  <span class="tb-game-name hide-mobile">Spin &amp; Win</span>
+  <span class="conn-dot disconnected" id="connDot"></span>
+  <div class="tb-balance"><span class="tbb-l">Balance</span><span class="tbb-v" id="topBalance">₹0</span></div>
+  <button class="btn btn-gold btn-sm" onclick="window.location.href='index.html'">+ Deposit</button>
+</div>
+<div class="game-layout">
+  <!-- LEFT: Bet config -->
+  <div class="side-panel">
+    <div class="sp-head">Place Your Bet</div>
+    <div class="sp-body">
+      <div class="sl">Your Stake</div>
+      <div class="stake-chips" id="stakeChips">
+        <div class="s-chip" onclick="setStake(this,10)"><span class="sc-label">Stake</span><span class="sc-val">₹10</span></div>
+        <div class="s-chip" onclick="setStake(this,20)"><span class="sc-label">Stake</span><span class="sc-val">₹20</span></div>
+        <div class="s-chip active" onclick="setStake(this,50)"><span class="sc-label">Stake</span><span class="sc-val">₹50</span></div>
+        <div class="s-chip" onclick="setStake(this,100)"><span class="sc-label">Stake</span><span class="sc-val">₹100</span></div>
+        <div class="s-chip" onclick="setStake(this,200)"><span class="sc-label">Stake</span><span class="sc-val">₹200</span></div>
+        <div class="s-chip" onclick="setStake(this,500)"><span class="sc-label">Stake</span><span class="sc-val">₹500</span></div>
+      </div>
+      <div class="divider" style="margin:.5rem 0"></div>
+      <div class="sl">Players per Round</div>
+      <div class="pc-chips" id="pcChips">
+        <div class="pc-chip" onclick="setPC(this,5)"><span class="pcc-label">Players</span>5</div>
+        <div class="pc-chip active" onclick="setPC(this,10)"><span class="pcc-label">Players</span>10</div>
+        <div class="pc-chip" onclick="setPC(this,20)"><span class="pcc-label">Players</span>20</div>
+        <div class="pc-chip" onclick="setPC(this,30)"><span class="pcc-label">Players</span>30</div>
+        <div class="pc-chip" onclick="setPC(this,40)"><span class="pcc-label">Players</span>40</div>
+        <div class="pc-chip" onclick="setPC(this,50)"><span class="pcc-label">Players</span>50</div>
+      </div>
+      <div class="divider" style="margin:.5rem 0"></div>
+      <div class="pot-box">
+        <div class="pot-row"><span class="pot-lbl">Your Stake</span><span class="pot-val" id="potStake">₹50</span></div>
+        <div class="pot-row"><span class="pot-lbl">Players</span><span class="pot-val" id="potPC">10</span></div>
+        <div class="pot-row"><span class="pot-lbl">Gross Pot</span><span class="pot-val" id="potGross">₹500</span></div>
+        <div class="pot-row"><span class="pot-lbl">Platform (5%)</span><span class="pot-val" id="potFee">₹25</span></div>
+        <div class="pot-row"><span class="pot-lbl" style="color:var(--indigo);font-weight:700">🏆 Winner Gets</span><span class="pot-val big" id="potWin">₹475</span></div>
+      </div>
+      <div class="match-progress" id="matchProgress">
+        <div class="mp-header"><span class="mp-title">Matchmaking</span><span class="mp-count"><span id="mpJoined">1</span>/<span id="mpTotal">10</span></span></div>
+        <div class="mp-bar-track"><div class="mp-bar-fill" id="mpFill"></div></div>
+        <div class="mp-status" id="mpStatus">Searching for players...</div>
+      </div>
+      <button class="btn-find" id="btnFind" onclick="findMatch()">🎯 Find Match</button>
+      <button class="btn-leave" id="btnLeave" onclick="leaveGame()">Leave Queue</button>
+    </div>
+  </div>
+  <!-- CENTER: Arena -->
+  <div class="arena" id="arena">
+    <div class="arena-bar" id="arenaBar">
+      <div class="ab-item"><div class="ab-val" id="abStake">₹50</div><div class="ab-lbl">Your Stake</div></div>
+      <div class="ab-item"><div class="ab-val" id="abPlayers">0/10</div><div class="ab-lbl">Players</div></div>
+      <div class="ab-item"><div class="ab-val" id="abPot">₹475</div><div class="ab-lbl">Prize Pool</div></div>
+      <div class="ab-item"><div class="ab-val" id="abStatus" style="color:var(--text3);font-size:.82rem">Waiting</div><div class="ab-lbl">Status</div></div>
+    </div>
+    <div class="wheel-wrap" id="wheelWrap">
+      <div class="rim-outer"></div><div class="rim-gap"></div><div class="rim-ring"></div>
+      <div class="peg"><div class="peg-tri"></div><div class="peg-base"></div></div>
+      <canvas id="spinCanvas" width="420" height="420"></canvas>
+      <div id="ballEl"></div>
+      <div class="cd-overlay" id="cdOverlay"><div class="cd-num" id="cdNum">5</div><div class="cd-label">Get Ready!</div><div class="cd-sub" id="cdSub">Spinning in a moment...</div></div>
+      <div class="result-overlay" id="resultOverlay"><div class="ro-trophy" id="roTrophy">🏆</div><div class="ro-name" id="roName">—</div><div class="ro-wins-label">Wins the pot!</div><div class="ro-prize" id="roPrize">₹0</div><div class="ro-fee" id="roFee"></div><button class="btn btn-gold btn-sm" style="margin-top:.5rem" onclick="resetGame()">Play Again</button></div>
+    </div>
+    <div class="arena-strip">
+      <div class="as-item"><div class="as-val" id="asJoined">0</div><div class="as-lbl">Joined</div></div>
+      <div class="as-item"><div class="as-val" id="asNeeded">10</div><div class="as-lbl">Needed</div></div>
+      <div class="as-item"><div class="as-val" id="asPool">₹475</div><div class="as-lbl">Prize Pool</div></div>
+      <div class="as-item"><div class="as-val" id="asRound">—</div><div class="as-lbl">Round</div></div>
+    </div>
+  </div>
+  <!-- RIGHT: Players + History -->
+  <div class="side-panel">
+    <div class="sp-head">Players<span id="playerBadge" style="margin-left:auto;font-size:.72rem;font-weight:800;color:var(--indigo)">0/10</span></div>
+    <div class="sp-body" style="padding:.8rem 1rem"><div class="players-list" id="playersList"></div></div>
+    <div class="sp-head" style="border-top:1px solid var(--border-dim)">My History<span id="histCount" style="margin-left:auto;font-size:.7rem;color:var(--text3)">0 games</span></div>
+    <div class="sp-body" style="padding:.8rem 1rem"><div class="hist-list" id="histList"><div class="hist-empty">No games played yet</div></div></div>
+  </div>
+</div>
+<div id="toast"></div>
+<script src="spinwin-engine.js"></script>
+</body>
+</html>
