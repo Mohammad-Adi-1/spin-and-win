@@ -104,6 +104,7 @@ body{background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
 .peg-base{width:22px;height:10px;margin-top:-4px;background:radial-gradient(circle at 50% 30%,#fffacd,#c68a00);border-radius:3px 3px 8px 8px;margin-left:-1px}
 #spinCanvas{position:relative;z-index:2;border-radius:50%;display:block;filter:drop-shadow(0 8px 24px rgba(0,0,0,.18));will-change:transform}
 #ballEl{position:absolute;z-index:15;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.95) 0%,rgba(255,255,255,.3) 22%,transparent 50%),radial-gradient(circle at 50% 50%,#f0f0f0 0%,#d0d0d0 40%,#888 75%,#444 100%);box-shadow:0 4px 10px rgba(0,0,0,.4),inset 0 -1px 3px rgba(0,0,0,.2);transform:translate(-50%,-50%);pointer-events:none;display:none;will-change:left,top}
+#handEl{position:absolute;z-index:30;font-size:2rem;display:none;pointer-events:none;transform-origin:bottom right;filter:drop-shadow(0 4px 6px rgba(0,0,0,.3))}
 .cd-overlay{position:absolute;inset:0;z-index:20;border-radius:50%;background:rgba(238,240,248,.88);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;flex-direction:column;gap:.4rem}
 .cd-overlay.active{display:flex;animation:cd-pop .3s var(--ease-out-expo)}
 @keyframes cd-pop{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:none}}
@@ -219,6 +220,7 @@ body{background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
       <div class="peg"><div class="peg-tri"></div><div class="peg-base"></div></div>
       <canvas id="spinCanvas" width="420" height="420"></canvas>
       <div id="ballEl"></div>
+      <div id="handEl">🤏</div>
       <div class="cd-overlay" id="cdOverlay"><div class="cd-num" id="cdNum">5</div><div class="cd-label">Get Ready!</div><div class="cd-sub" id="cdSub">Spinning in a moment...</div></div>
       <div class="result-overlay" id="resultOverlay"><div class="ro-trophy" id="roTrophy">🏆</div><div class="ro-name" id="roName">—</div><div class="ro-wins-label">Wins the pot!</div><div class="ro-prize" id="roPrize">$0</div><div class="ro-fee" id="roFee"></div><button class="btn btn-gold btn-sm" style="margin-top:.5rem" onclick="resetGame()">Play Again</button></div>
     </div>
