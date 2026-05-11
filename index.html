@@ -1,0 +1,833 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">
+<meta name="format-detection" content="telephone=no">
+<title>VELOX â€” Where Fortune Moves Fast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="style.css">
+<!-- Telegram Mini App SDK -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- TON Connect UI -->
+<script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+<!-- Velox Config -->
+<script src="config.js"></script>
+<style>
+/* â•â•â•â•â•â•â•â•â•â•â• LANDING PAGE â€” BRIGHT THEME â•â•â•â•â•â•â•â•â•â•â• */
+
+/* â”€â”€ Nav â”€â”€ */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  height:var(--header-h);display:flex;align-items:center;
+  transition:background .3s,box-shadow .3s;
+}
+.nav.scrolled{
+  background:rgba(255,255,255,.95);backdrop-filter:blur(16px);
+  box-shadow:0 1px 0 var(--border-dim),0 4px 24px rgba(0,0,0,.06);
+}
+.nav-inner{
+  width:100%;max-width:var(--max-w);margin:0 auto;padding:0 2rem;
+  display:flex;align-items:center;justify-content:space-between;gap:2rem;
+}
+.nav-logo{
+  font-size:1.5rem;font-weight:800;letter-spacing:-1px;
+  background:linear-gradient(135deg,var(--indigo),var(--violet2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  text-decoration:none;
+}
+.nav-links{display:flex;align-items:center;gap:2rem}
+.nav-links a{font-size:.85rem;font-weight:500;color:var(--text2);transition:color .2s}
+.nav-links a:hover{color:var(--indigo)}
+.nav-actions{display:flex;align-items:center;gap:.8rem}
+.user-nav{display:none;align-items:center;gap:.8rem}
+.user-nav.active{display:flex}
+.auth-nav{display:flex;align-items:center;gap:.8rem}
+.auth-nav.hidden{display:none}
+
+.balance-pill{
+  display:flex;align-items:center;gap:.55rem;
+  padding:.38rem .9rem;border-radius:100px;
+  background:var(--indigo5);border:1.5px solid var(--border);
+  cursor:pointer;transition:all .18s;
+}
+.balance-pill:hover{border-color:var(--indigo2);background:var(--indigo4)}
+.balance-pill .bp-label{font-size:.6rem;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text3)}
+.balance-pill .bp-val{font-size:.9rem;font-weight:700;color:var(--indigo)}
+.balance-pill .bp-icon{font-size:.95rem}
+
+.user-avatar{
+  width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,var(--indigo),var(--violet2));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:.78rem;color:#fff;
+  cursor:pointer;border:2px solid transparent;
+  transition:border-color .2s;position:relative;
+}
+.user-avatar:hover{border-color:var(--indigo2)}
+.user-dropdown{
+  position:absolute;top:calc(100% + 8px);right:0;
+  background:#fff;border:1px solid var(--border-dim2);border-radius:14px;
+  min-width:190px;overflow:hidden;
+  box-shadow:0 8px 32px rgba(79,70,229,.15),0 2px 8px rgba(0,0,0,.08);
+  opacity:0;pointer-events:none;transform:translateY(-6px);
+  transition:all .18s var(--ease-out-expo);z-index:200;
+}
+.user-avatar:hover .user-dropdown{opacity:1;pointer-events:all;transform:none}
+.ud-item{
+  padding:.7rem 1.1rem;font-size:.84rem;font-weight:500;color:var(--text2);
+  transition:background .12s,color .12s;cursor:pointer;
+  display:flex;align-items:center;gap:.6rem;
+}
+.ud-item:hover{background:var(--indigo5);color:var(--indigo)}
+.ud-item.danger{color:var(--red2)}
+.ud-item.danger:hover{background:var(--red3);color:var(--red)}
+
+/* â”€â”€ Hero â”€â”€ */
+.hero{
+  position:relative;min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  overflow:hidden;background:#0f0c29;
+}
+.hero-video-wrap{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero-video{width:100%;height:100%;object-fit:cover;opacity:.35;filter:saturate(.85)}
+.hero-video-wrap::before{
+  content:'';position:absolute;inset:0;z-index:1;
+  background:linear-gradient(180deg,rgba(15,12,41,.35) 0%,rgba(15,12,41,.1) 40%,rgba(15,12,41,.1) 65%,rgba(15,12,41,.95) 100%);
+}
+.hero-video-wrap::after{
+  content:'';position:absolute;inset:0;z-index:2;
+  background:radial-gradient(ellipse 80% 60% at 50% 50%,rgba(79,70,229,.12),transparent 70%);
+}
+
+/* Metrics bar */
+.hero-metrics{
+  position:relative;z-index:10;
+  width:100%;max-width:var(--max-w);padding:0 2rem;margin-bottom:2.5rem;
+  display:flex;gap:1px;align-items:stretch;
+}
+.hero-metric{
+  flex:1;padding:.9rem 1.2rem;
+  background:rgba(255,255,255,.1);backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.15);
+  text-align:center;
+  animation:fade-metric .55s var(--ease-out-expo) both;
+}
+.hero-metric:first-child{border-radius:10px 0 0 10px}
+.hero-metric:last-child{border-radius:0 10px 10px 0}
+.hero-metric:nth-child(1){animation-delay:.08s}
+.hero-metric:nth-child(2){animation-delay:.16s}
+.hero-metric:nth-child(3){animation-delay:.24s}
+.hero-metric:nth-child(4){animation-delay:.32s}
+.hero-metric:nth-child(5){animation-delay:.4s}
+@keyframes fade-metric{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+.hm-val{font-size:1.6rem;font-weight:800;color:#fff;line-height:1}
+.hm-lbl{font-size:.62rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.55);margin-top:.2rem}
+.hm-live{display:inline-flex;align-items:center;gap:.35rem;margin-top:.2rem}
+.hm-dot{width:6px;height:6px;border-radius:50%;background:#4ade80;animation:pulse-dot 1.4s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.75)}}
+
+/* Hero copy */
+.hero-content{
+  position:relative;z-index:10;text-align:center;
+  padding:0 1rem;max-width:820px;margin-top:-1.5rem;
+}
+.hero-eyebrow{
+  font-size:.72rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+  color:rgba(165,155,255,.85);margin-bottom:1rem;
+  animation:hero-in .7s var(--ease-out-expo) .15s both;
+}
+.hero-title{
+  font-size:clamp(3rem,9vw,6.5rem);font-weight:800;
+  line-height:1.0;letter-spacing:-2.5px;color:#fff;
+  margin-bottom:1.4rem;
+  animation:hero-in .7s var(--ease-out-expo) .28s both;
+}
+.hero-title em{
+  font-style:normal;
+  background:linear-gradient(135deg,#a5b4fc,#818cf8,#c4b5fd,#fbbf24);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero-sub{
+  font-size:1.05rem;color:rgba(255,255,255,.65);line-height:1.7;font-weight:400;
+  max-width:480px;margin:0 auto 2.2rem;
+  animation:hero-in .7s var(--ease-out-expo) .4s both;
+}
+.hero-cta{
+  display:flex;align-items:center;justify-content:center;gap:1rem;flex-wrap:wrap;
+  animation:hero-in .7s var(--ease-out-expo) .52s both;
+}
+@keyframes hero-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+
+.scroll-hint{
+  position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);
+  z-index:10;display:flex;flex-direction:column;align-items:center;gap:.4rem;
+  color:rgba(255,255,255,.35);font-size:.65rem;letter-spacing:2px;text-transform:uppercase;
+  font-weight:600;animation:float-hint 2.2s ease-in-out infinite;
+}
+.scroll-line{width:1px;height:36px;background:linear-gradient(180deg,rgba(255,255,255,.4),transparent);margin-top:.3rem}
+@keyframes float-hint{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(6px)}}
+
+/* â”€â”€ Deposit banner â”€â”€ */
+.deposit-banner{display:none;background:var(--indigo5);border-bottom:1px solid var(--border)}
+.deposit-banner.active{display:block}
+.deposit-banner-inner{
+  max-width:var(--max-w);margin:0 auto;padding:.6rem 2rem;
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+}
+.db-text{font-size:.83rem;color:var(--text2);font-weight:500}
+.db-text strong{color:var(--indigo);font-weight:700}
+.db-actions{display:flex;gap:.6rem}
+
+/* â”€â”€ Sections â”€â”€ */
+section{position:relative;padding:5rem 0}
+.section-header{margin-bottom:3rem}
+.games-section{background:var(--bg)}
+.how-section{background:var(--bg2)}
+
+/* â”€â”€ Games grid â”€â”€ */
+.games-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.2rem}
+.game-card{
+  position:relative;border-radius:20px;overflow:hidden;
+  aspect-ratio:4/3;cursor:pointer;
+  border:1.5px solid var(--border-dim);
+  transition:transform .28s var(--ease-out-expo),box-shadow .28s;
+  background:#1a1a2e;
+  box-shadow:0 2px 8px rgba(0,0,0,.06);
+}
+.game-card:hover{transform:translateY(-6px) scale(1.015);box-shadow:0 20px 50px rgba(79,70,229,.18)}
+.game-card.highlight{border-color:rgba(99,102,241,.4);box-shadow:0 0 0 2px rgba(99,102,241,.15)}
+.game-card.locked{opacity:.5;cursor:not-allowed}
+.game-card.locked:hover{transform:none;box-shadow:none}
+.game-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.65;transition:transform .45s var(--ease-out-expo),opacity .3s}
+.game-card:hover .game-bg{transform:scale(1.06);opacity:.82}
+.game-gradient{position:absolute;inset:0;background:linear-gradient(0deg,rgba(10,8,30,.97) 0%,rgba(10,8,30,.55) 55%,transparent 100%)}
+.game-content{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:1.4rem}
+.game-badge{position:absolute;top:1rem;right:1rem}
+.game-icon{font-size:2.2rem;margin-bottom:.5rem;line-height:1}
+.game-name{font-size:.88rem;font-weight:700;color:#fff;margin-bottom:.3rem;letter-spacing:.2px}
+.game-desc{font-size:.78rem;color:rgba(255,255,255,.6);line-height:1.45}
+.game-meta{display:flex;align-items:center;gap:.7rem;margin-top:.6rem}
+.game-players{font-size:.7rem;color:rgba(255,255,255,.45);display:flex;align-items:center;gap:.3rem}
+.game-rtp{font-size:.7rem;color:#4ade80;font-weight:600}
+.game-card.featured{grid-column:span 2;aspect-ratio:16/7}
+@media(max-width:600px){.game-card.featured{grid-column:span 1;aspect-ratio:4/3}}
+.lock-overlay{
+  position:absolute;inset:0;z-index:5;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(244,246,251,.5);backdrop-filter:blur(3px);
+}
+.lock-overlay .lock-icon{font-size:2rem;opacity:.7}
+
+/* â”€â”€ Steps â”€â”€ */
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.4rem}
+.step-card{
+  padding:2rem 1.5rem;border-radius:18px;
+  background:#fff;border:1.5px solid var(--border-dim);
+  box-shadow:0 2px 10px rgba(0,0,0,.04);
+  position:relative;overflow:hidden;
+  transition:box-shadow .22s,transform .22s,border-color .22s;
+}
+.step-card:hover{box-shadow:0 8px 28px rgba(79,70,229,.12);transform:translateY(-3px);border-color:var(--border)}
+.step-card::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--indigo),var(--violet2),var(--amber));
+  opacity:0;transition:opacity .25s;
+}
+.step-card:hover::after{opacity:1}
+.step-num{font-size:3.8rem;font-weight:800;color:var(--indigo4);line-height:1;margin-bottom:.7rem}
+.step-title{font-size:.85rem;font-weight:700;color:var(--indigo);margin-bottom:.5rem}
+.step-body{font-size:.88rem;color:var(--text2);line-height:1.65;font-weight:400}
+
+/* â”€â”€ Footer â”€â”€ */
+footer{background:#1a1d2e;border-top:1px solid rgba(255,255,255,.06);padding:3.5rem 0 2rem}
+.footer-inner{
+  max-width:var(--max-w);margin:0 auto;padding:0 2rem;
+  display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:3rem;
+}
+@media(max-width:768px){.footer-inner{grid-template-columns:1fr 1fr;gap:2rem}}
+@media(max-width:480px){.footer-inner{grid-template-columns:1fr}}
+.footer-brand .fb-logo{
+  font-size:1.5rem;font-weight:800;letter-spacing:-1px;
+  background:linear-gradient(135deg,#a5b4fc,#818cf8);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:.8rem;display:block;
+}
+.footer-brand p{font-size:.85rem;color:rgba(255,255,255,.4);line-height:1.65;max-width:260px}
+.footer-col h4{font-size:.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:1rem}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:.65rem}
+.footer-col ul li a{font-size:.84rem;color:rgba(255,255,255,.45);transition:color .2s;font-weight:400}
+.footer-col ul li a:hover{color:#a5b4fc}
+.footer-bottom{
+  max-width:var(--max-w);margin:2rem auto 0;padding:1.5rem 2rem 0;
+  border-top:1px solid rgba(255,255,255,.06);
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:.75rem;color:rgba(255,255,255,.25);flex-wrap:wrap;gap:1rem;font-weight:400;
+}
+</style>
+</head>
+<body>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â• NAVIGATION â•â•â•â•â•â•â•â•â•â•â• -->
+<nav class="nav" id="mainNav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">VELOX</a>
+
+    <div class="nav-links hide-mobile">
+      <a href="#games">Games</a>
+      <a href="#how">How It Works</a>
+      <a href="#">Leaderboard</a>
+      <a href="#">Support</a>
+    </div>
+
+    <div class="nav-actions">
+      <!-- TON Wallet Connect -->
+      <div id="ton-connect-button"></div>
+      <!-- Telegram User Display (auto-filled) -->
+      <div class="user-nav" id="userNav" style="display:none">
+        <div class="balance-pill" id="balancePill" onclick="openModal('depositModal')">
+          <span class="bp-icon">ðŸ’Ž</span>
+          <div>
+            <div class="bp-label">TON Balance</div>
+            <div class="bp-val" id="navBalance">0 TON</div>
+          </div>
+        </div>
+        <button class="btn btn-gold btn-sm" onclick="openModal('depositModal')">+ Deposit</button>
+        <div class="user-avatar" id="userAvatarBtn">
+          <span id="userInitials">U</span>
+          <div class="user-dropdown" id="userDropdown">
+            <div class="ud-item" onclick="openModal('withdrawModal')">ðŸ¦ Withdraw</div>
+            <div class="ud-item" onclick="showHistory()">ðŸ“‹ History</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â• HERO â•â•â•â•â•â•â•â•â•â•â• -->
+<section class="hero" id="hero">
+  <div class="hero-video-wrap">
+    <!-- Luxury/royalty video â€” using a free Pexels embed -->
+    <video class="hero-video" autoplay muted loop playsinline poster="">
+      <source src="https://videos.pexels.com/video-files/3571264/3571264-uhd_2560_1440_30fps.mp4" type="video/mp4">
+    </video>
+  </div>
+
+  <!-- Metrics bar -->
+  <div class="hero-metrics">
+    <div class="hero-metric" style="animation-delay:.1s">
+      <div class="hm-val" data-count="284917" data-prefix="">2,84,917</div>
+      <div class="hm-lbl">Total Players</div>
+    </div>
+    <div class="hero-metric" style="animation-delay:.2s">
+      <div class="hm-val" id="livePlayersVal">1,247</div>
+      <div class="hm-lbl">
+        <span class="hm-live"><span class="hm-dot"></span>Live Now</span>
+      </div>
+    </div>
+    <div class="hero-metric" style="animation-delay:.3s">
+      <div class="hm-val">â‚¹48.6 Cr</div>
+      <div class="hm-lbl">Total Paid Out</div>
+    </div>
+    <div class="hero-metric" style="animation-delay:.4s">
+      <div class="hm-val">12</div>
+      <div class="hm-lbl">Games Available</div>
+    </div>
+    <div class="hero-metric" style="animation-delay:.5s">
+      <div class="hm-val">4.9â˜…</div>
+      <div class="hm-lbl">Player Rating</div>
+    </div>
+  </div>
+
+  <!-- Hero copy -->
+  <div class="hero-content">
+    <div class="hero-eyebrow">Est. 2025 Â· Premium Gaming Platform</div>
+    <h1 class="hero-title">Where <em>Fortune</em><br>Moves Fast</h1>
+    <p class="hero-sub">India's most premium skill-based gaming platform. Play, compete, and win â€” with real money on the line.</p>
+    <div class="hero-cta">
+      <button class="btn btn-gold btn-lg" onclick="openModal('registerModal')">Start Playing Free</button>
+      <button class="btn btn-outline btn-lg" onclick="document.getElementById('games').scrollIntoView({behavior:'smooth'})">Browse Games</button>
+    </div>
+  </div>
+
+  <div class="scroll-hint">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- Deposit banner (logged-in only) -->
+<div class="deposit-banner" id="depositBanner">
+  <div class="deposit-banner-inner">
+    <span class="db-text">Welcome back, <strong id="bannerName">Player</strong>! Your balance is <strong id="bannerBalance">â‚¹0</strong>. Ready to play?</span>
+    <div class="db-actions">
+      <button class="btn btn-gold btn-sm" onclick="openModal('depositModal')">Deposit via UPI</button>
+      <button class="btn btn-outline btn-sm" onclick="openModal('depositModal')">Crypto Deposit</button>
+    </div>
+  </div>
+</div>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â• GAMES â•â•â•â•â•â•â•â•â•â•â• -->
+<section class="games-section" id="games">
+  <div class="container">
+    <div class="section-header fade-in">
+      <div class="section-eyebrow">Games Lobby</div>
+      <h2 class="section-title gold-text">Choose Your Arena</h2>
+      <p class="section-sub" style="margin-top:.8rem">From instant spins to skill-based tournaments â€” every game is a chance to multiply your stake.</p>
+    </div>
+    <div class="games-grid" id="gamesGrid"></div>
+  </div>
+</section>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â• HOW IT WORKS â•â•â•â•â•â•â•â•â•â•â• -->
+<section class="how-section" id="how">
+  <div class="container">
+    <div class="section-header fade-in" style="text-align:center">
+      <div class="section-eyebrow">The Process</div>
+      <h2 class="section-title" style="color:var(--cream)">How <em style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold2)">Velox</em> Works</h2>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card fade-in">
+        <div class="step-num">01</div>
+        <div class="step-title">Create Account</div>
+        <div class="step-body">Register in under 60 seconds. Verified, secure, and anonymous.</div>
+      </div>
+      <div class="step-card fade-in">
+        <div class="step-num">02</div>
+        <div class="step-title">Deposit Funds</div>
+        <div class="step-body">Use UPI, net banking, or any major cryptocurrency. Funds credited instantly.</div>
+      </div>
+      <div class="step-card fade-in">
+        <div class="step-num">03</div>
+        <div class="step-title">Pick a Game</div>
+        <div class="step-body">Choose your stake, join a table, and compete against real players worldwide.</div>
+      </div>
+      <div class="step-card fade-in">
+        <div class="step-num">04</div>
+        <div class="step-title">Win & Withdraw</div>
+        <div class="step-body">Winners paid instantly. Withdraw via UPI or crypto â€” no delays, no fees.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â• FOOTER â•â•â•â•â•â•â•â•â•â•â• -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="fb-logo">VELOX</div>
+      <p>India's most trusted premium gaming platform. Licensed, secure, and fast.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Games</h4>
+      <ul>
+        <li><a href="spinwin.html">Spin &amp; Win</a></li>
+        <li><a href="#">Crash</a></li>
+        <li><a href="#">Mines</a></li>
+        <li><a href="#">Plinko</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="#">About Us</a></li>
+        <li><a href="#">Careers</a></li>
+        <li><a href="#">Press</a></li>
+        <li><a href="#">Blog</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Support</h4>
+      <ul>
+        <li><a href="#">Help Centre</a></li>
+        <li><a href="#">Fair Play</a></li>
+        <li><a href="#">Responsible Gaming</a></li>
+        <li><a href="#">Terms &amp; Privacy</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>Â© 2025 Velox Technologies Pvt. Ltd. All rights reserved.</span>
+    <span>18+ only Â· Play responsibly Â· Not available in restricted regions</span>
+  </div>
+</footer>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â• TOAST â•â•â•â•â•â•â•â•â•â•â• -->
+<div id="toast"></div>
+
+
+<!-- â•â•â•â•â•â•â•â•â•â•â• TON DEPOSIT MODAL â•â•â•â•â•â•â•â•â•â•â• -->
+<div class="modal-overlay" id="depositModal">
+  <div class="modal-box" style="max-width:460px">
+    <div class="modal-head">
+      <span class="modal-title">ðŸ’Ž Deposit TON</span>
+      <button class="modal-close" onclick="closeModal('depositModal')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Wallet status -->
+      <div id="dep-wallet-status" style="display:flex;align-items:center;gap:.8rem;padding:.9rem 1rem;border-radius:12px;background:var(--indigo5);border:1.5px solid var(--border);margin-bottom:1.2rem">
+        <span style="font-size:1.4rem">ðŸ”—</span>
+        <div style="flex:1">
+          <div style="font-size:.72rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Connected Wallet</div>
+          <div id="dep-wallet-addr" style="font-size:.8rem;font-weight:600;color:var(--indigo);word-break:break-all">Connect your wallet first</div>
+        </div>
+      </div>
+
+      <!-- Treasury -->
+      <div style="padding:.75rem 1rem;border-radius:10px;background:rgba(99,102,241,.06);border:1px dashed var(--border);margin-bottom:1.2rem">
+        <div style="font-size:.65rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:.3rem">Funds go to</div>
+        <div style="font-size:.75rem;font-family:'Courier New',monospace;color:var(--indigo);word-break:break-all" id="treasuryDisplay"></div>
+      </div>
+
+      <!-- Amount input -->
+      <div class="field">
+        <label>Amount (TON) &mdash; minimum 1 TON</label>
+        <div style="display:flex;gap:.5rem;margin-bottom:.6rem;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="setDepAmt(1)">1 TON</button>
+          <button class="btn btn-ghost btn-sm" onclick="setDepAmt(5)">5 TON</button>
+          <button class="btn btn-ghost btn-sm" onclick="setDepAmt(10)">10 TON</button>
+          <button class="btn btn-ghost btn-sm" onclick="setDepAmt(50)">50 TON</button>
+        </div>
+        <input type="number" id="depAmt" placeholder="Enter amount in TON" min="1" step="0.1">
+      </div>
+
+      <button class="btn btn-gold btn-full" onclick="doDeposit()">ðŸ’Ž Send TON</button>
+      <div style="text-align:center;font-size:.72rem;color:var(--text4);margin-top:.8rem">Secured by TON Blockchain &bull; Instant credit after confirmation</div>
+    </div>
+  </div>
+</div>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â• WITHDRAW REQUEST MODAL â•â•â•â•â•â•â•â•â•â•â• -->
+<div class="modal-overlay" id="withdrawModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-title">ðŸ¦ Withdraw TON</span>
+      <button class="modal-close" onclick="closeModal('withdrawModal')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;justify-content:space-between;padding:.8rem 1rem;background:rgba(99,102,241,.06);border:1px solid var(--border-dim);border-radius:10px;margin-bottom:1.2rem">
+        <span style="font-size:.8rem;color:var(--text3)">Available Balance</span>
+        <span id="withAvail" style="font-size:.95rem;font-weight:700;color:var(--indigo)">0 TON</span>
+      </div>
+      <div class="field">
+        <label>Your TON Wallet Address</label>
+        <input type="text" id="withAddr" placeholder="UQ... or EQ...">
+      </div>
+      <div class="field">
+        <label>Amount (TON)</label>
+        <input type="number" id="withAmt" placeholder="Enter amount..." min="1" step="0.1">
+      </div>
+      <button class="btn btn-gold btn-full" onclick="doWithdrawRequest()">ðŸš€ Submit Withdrawal Request</button>
+      <div style="text-align:center;font-size:.72rem;color:var(--text4);margin-top:.8rem">Requests are processed manually within 24h</div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<script>
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   VELOX â€” Telegram Mini App Engine
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+// â”€â”€ Supabase client â”€â”€
+const _supabase = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+
+// â”€â”€ TON Connect â”€â”€
+let tonConnectUI;
+
+// â”€â”€ App State â”€â”€
+const V = {
+  tgUser: null,
+  dbUser: null,
+  get balance(){ return parseFloat(this.dbUser?.balance || 0); },
+};
+
+// â”€â”€ Init â”€â”€
+document.addEventListener('DOMContentLoaded', async () => {
+  // Telegram SDK
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    tg.expand();
+    tg.ready();
+    tg.setHeaderColor('#ffffff');
+  }
+
+  // TON Connect
+  tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+    manifestUrl: 'https://spin-and-win-axol.onrender.com/tonconnect-manifest.json',
+    buttonRootId: 'ton-connect-button'
+  });
+
+  // Listen for wallet connect/disconnect
+  tonConnectUI.onStatusChange(wallet => {
+    if (wallet) {
+      onWalletConnected(wallet);
+    } else {
+      onWalletDisconnected();
+    }
+  });
+
+  // Set treasury display
+  const td = document.getElementById('treasuryDisplay');
+  if (td) td.textContent = CONFIG.TREASURY_ADDRESS;
+
+  // Get Telegram user
+  V.tgUser = tg?.initDataUnsafe?.user || null;
+
+  // Load or create DB user if we have Telegram identity
+  if (V.tgUser) {
+    await loadOrCreateUser(V.tgUser);
+    updateNavUI();
+  }
+
+  buildGamesGrid();
+  observeFadeIns();
+  animateLivePlayers();
+  navScrollEffect();
+});
+
+// â”€â”€ Load or create Supabase user â”€â”€
+async function loadOrCreateUser(tgUser) {
+  let { data: user } = await _supabase
+    .from('users')
+    .select('*')
+    .eq('id', tgUser.id)
+    .single();
+
+  if (!user) {
+    const { data: newUser } = await _supabase
+      .from('users')
+      .insert([{ id: tgUser.id, username: tgUser.username || '', first_name: tgUser.first_name || 'Player', balance: 0 }])
+      .select().single();
+    user = newUser;
+  }
+
+  V.dbUser = user;
+
+  // Real-time balance sync
+  _supabase.channel('balance-watch')
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${tgUser.id}` }, payload => {
+      V.dbUser = payload.new;
+      updateNavUI();
+    })
+    .subscribe();
+}
+
+// â”€â”€ Wallet connected callback â”€â”€
+async function onWalletConnected(wallet) {
+  const addr = wallet.account.address;
+  const short = addr.slice(0, 6) + '...' + addr.slice(-4);
+
+  // Show user nav
+  document.getElementById('userNav').style.display = 'flex';
+
+  // Update deposit modal wallet display
+  const depAddr = document.getElementById('dep-wallet-addr');
+  if (depAddr) depAddr.textContent = short;
+
+  // If no Telegram user, use wallet address as ID fallback
+  if (!V.tgUser) {
+    await loadOrCreateUserByWallet(addr);
+  }
+
+  updateNavUI();
+}
+
+async function loadOrCreateUserByWallet(addr) {
+  let { data: user } = await _supabase.from('users').select('*').eq('wallet_address', addr).single();
+  if (!user) {
+    const { data: newUser } = await _supabase
+      .from('users')
+      .insert([{ id: Date.now(), username: addr.slice(0, 8), first_name: 'Player', balance: 0, wallet_address: addr }])
+      .select().single();
+    user = newUser;
+  }
+  V.dbUser = user;
+}
+
+function onWalletDisconnected() {
+  document.getElementById('userNav').style.display = 'none';
+  updateNavUI();
+}
+
+// â”€â”€ Nav UI â”€â”€
+function updateNavUI() {
+  const bal = V.balance;
+  const balEl = document.getElementById('navBalance');
+  if (balEl) balEl.textContent = bal.toFixed(2) + ' TON';
+
+  const withAvail = document.getElementById('withAvail');
+  if (withAvail) withAvail.textContent = bal.toFixed(2) + ' TON';
+
+  const initEl = document.getElementById('userInitials');
+  if (initEl && V.dbUser) {
+    initEl.textContent = (V.dbUser.first_name || 'P')[0].toUpperCase();
+  }
+
+  if (V.dbUser) {
+    document.getElementById('userNav').style.display = 'flex';
+  }
+}
+
+// â”€â”€ Deposit â”€â”€
+function setDepAmt(v) { document.getElementById('depAmt').value = v; }
+
+async function doDeposit() {
+  if (!tonConnectUI?.connected) {
+    showToast('âš  Please connect your TON wallet first');
+    return;
+  }
+  const amt = parseFloat(document.getElementById('depAmt').value);
+  if (!amt || amt < 1) { showToast('âš  Minimum deposit is 1 TON'); return; }
+
+  const nanoTON = Math.floor(amt * 1e9).toString();
+
+  try {
+    showToast('â³ Awaiting wallet confirmation...');
+    const result = await tonConnectUI.sendTransaction({
+      validUntil: Math.floor(Date.now() / 1000) + 120,
+      messages: [{ address: CONFIG.TREASURY_ADDRESS, amount: nanoTON }]
+    });
+
+    if (result) {
+      // Log in Supabase
+      await _supabase.from('transactions').insert([{
+        user_id: V.dbUser.id, type: 'deposit', amount: amt,
+        tx_hash: result.boc, status: 'completed'
+      }]);
+      // Credit balance
+      const newBal = V.balance + amt;
+      await _supabase.from('users').update({ balance: newBal }).eq('id', V.dbUser.id);
+      V.dbUser.balance = newBal;
+      updateNavUI();
+      closeModal('depositModal');
+      showToast('âœ… ' + amt + ' TON deposited successfully!');
+    }
+  } catch (e) {
+    showToast('âŒ Transaction cancelled or failed');
+  }
+}
+
+// â”€â”€ Withdraw Request â”€â”€
+async function doWithdrawRequest() {
+  const addr = document.getElementById('withAddr').value.trim();
+  const amt  = parseFloat(document.getElementById('withAmt').value);
+
+  if (!addr) { showToast('âš  Enter your TON wallet address'); return; }
+  if (!amt || amt < 1) { showToast('âš  Minimum withdrawal is 1 TON'); return; }
+  if (amt > V.balance) { showToast('âš  Insufficient balance'); return; }
+
+  const { error } = await _supabase.from('transactions').insert([{
+    user_id: V.dbUser.id, type: 'withdraw', amount: amt,
+    wallet_address: addr, status: 'pending'
+  }]);
+
+  if (!error) {
+    const newBal = V.balance - amt;
+    await _supabase.from('users').update({ balance: newBal }).eq('id', V.dbUser.id);
+    V.dbUser.balance = newBal;
+    updateNavUI();
+    closeModal('withdrawModal');
+    showToast('ðŸš€ Withdrawal request submitted! Processed within 24h.');
+  } else {
+    showToast('âŒ Request failed. Try again.');
+  }
+}
+
+function showHistory() { showToast('ðŸ“‹ History â€” coming soon'); }
+
+// â”€â”€ Games grid â”€â”€
+const GAMES = [
+  { id:'spinwin', name:'Spin & Win', desc:'Multiplayer pot. Last wheel standing wins it all.', icon:'ðŸŽ¡', players:'2,847', rtp:'95%', badge:'FEATURED', badgeType:'badge-gold', highlight:true, featured:true, bg:'linear-gradient(135deg,#1a0a00,#3d1a00)' },
+  { id:'crash',   name:'Crash',      desc:'Cash out before the rocket crashes.', icon:'ðŸš€', players:'1,203', rtp:'97%', badge:'LIVE', badgeType:'badge-green', bg:'linear-gradient(135deg,#000a1a,#001a3d)' },
+  { id:'mines',   name:'Mines',      desc:'Navigate the minefield â€” every step riskier.', icon:'ðŸ’£', players:'894', rtp:'99%', badge:'HOT', badgeType:'badge-red', bg:'linear-gradient(135deg,#1a0000,#3d0000)' },
+  { id:'plinko',  name:'Plinko',     desc:'Drop the ball, watch the multipliers.', icon:'ðŸŽ¯', players:'672', rtp:'99%', badge:'NEW', badgeType:'badge-blue', bg:'linear-gradient(135deg,#001a10,#003d22)' },
+  { id:'dice',    name:'High / Low Dice', desc:'Predict the roll. Simple, fast, addictive.', icon:'ðŸŽ²', players:'541', rtp:'99%', badge:'', badgeType:'', bg:'linear-gradient(135deg,#100a1a,#2a1a3d)' },
+  { id:'slots',   name:'Velox Slots', desc:'Premium 5-reel slot experience.', icon:'ðŸŽ°', players:'1,108', rtp:'96%', badge:'COMING SOON', badgeType:'badge-blue', locked:true, bg:'linear-gradient(135deg,#0a0a0a,#1a1a1a)' },
+  { id:'blackjack',name:'Blackjack', desc:'Classic 21. Beat the dealer.', icon:'ðŸƒ', players:'389', rtp:'99.5%', badge:'COMING SOON', badgeType:'badge-blue', locked:true, bg:'linear-gradient(135deg,#001a00,#003d00)' },
+];
+
+function buildGamesGrid(){
+  const grid = document.getElementById('gamesGrid');
+  grid.innerHTML = GAMES.map(g => `
+    <div class="game-card ${g.featured?'featured':''} ${g.highlight?'highlight':''} ${g.locked?'locked':''}"
+         onclick="${g.locked?'':'enterGame(\''+g.id+'\')'}">
+      <div class="game-bg" style="background:${g.bg}"></div>
+      <div class="game-gradient"></div>
+      ${g.badge ? `<div class="game-badge"><span class="badge ${g.badgeType}">${g.badge}</span></div>` : ''}
+      ${g.locked ? `<div class="lock-overlay"><div class="lock-icon">ðŸ”’</div></div>` : ''}
+      <div class="game-content">
+        <div class="game-icon">${g.icon}</div>
+        <div class="game-name">${g.name}</div>
+        <div class="game-desc">${g.desc}</div>
+        <div class="game-meta">
+          <span class="game-players">ðŸ‘¥ ${g.players} playing</span>
+          <span class="game-rtp">RTP ${g.rtp}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function enterGame(id){
+  if (!V.dbUser) { showToast('âš  Connect your TON wallet to play'); return; }
+  if (id === 'spinwin') { window.location.href = 'spinwin.html'; return; }
+  showToast('ðŸš€ ' + id.charAt(0).toUpperCase() + id.slice(1) + ' â€” Coming very soon!');
+}
+
+// â”€â”€ Live players counter â”€â”€
+function animateLivePlayers(){
+  let base = 1247;
+  setInterval(() => {
+    base += Math.round((Math.random()-.4)*18);
+    base = Math.max(900, Math.min(2000, base));
+    document.getElementById('livePlayersVal').textContent = base.toLocaleString('en-IN');
+  }, 3200);
+}
+
+// â”€â”€ Nav scroll â”€â”€
+function navScrollEffect(){
+  const nav = document.getElementById('mainNav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 20);
+  }, { passive: true });
+}
+
+// â”€â”€ Fade-in observer â”€â”€
+function observeFadeIns(){
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: .1 });
+  document.querySelectorAll('.fade-in').forEach(el => io.observe(el));
+}
+
+// â”€â”€ Modal helpers â”€â”€
+function openModal(id){
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow='';
+}
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if(e.target===el) closeModal(el.id); });
+});
+
+// â”€â”€ Toast â”€â”€
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spin &amp; Win — VELOX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="style.css">
+<!-- Telegram Mini App SDK -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Velox Config -->
+<script src="config.js"></script>
+<style>
+/* ═══════════ SPIN&WIN — COMPLETE REWRITE ═══════════ */
+body{background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
+
+/* ── Top Bar ── */
+.top-bar{
+  height:var(--header-h);display:flex;align-items:center;
+  background:#fff;border-bottom:1px solid var(--border-dim);
+  padding:0 2rem;gap:1.5rem;
+  position:sticky;top:0;z-index:100;flex-shrink:0;
+  box-shadow:0 1px 6px rgba(0,0,0,.06);
+}
+.tb-back{display:flex;align-items:center;gap:.45rem;font-size:.82rem;font-weight:600;color:var(--text3);cursor:pointer;transition:color .18s;border:none;background:none}
+.tb-back:hover{color:var(--indigo)}
+.tb-logo{font-size:1.3rem;font-weight:800;letter-spacing:-1px;background:linear-gradient(135deg,var(--indigo),var(--violet2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-right:auto}
+.tb-game-name{font-size:.78rem;font-weight:600;color:var(--text3)}
+.tb-balance{display:flex;align-items:center;gap:.55rem;padding:.38rem .9rem;border-radius:8px;background:var(--indigo5);border:1.5px solid var(--border)}
+.tb-balance .tbb-l{font-size:.6rem;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text3)}
+.tb-balance .tbb-v{font-size:.9rem;font-weight:700;color:var(--indigo)}
+
+/* ── Layout ── */
+.game-layout{
+  flex:1;display:grid;grid-template-columns:290px 1fr 290px;gap:0;
+  height:calc(100vh - var(--header-h));
+  overflow:hidden;
+}
+@media(max-width:1100px){.game-layout{grid-template-columns:240px 1fr 240px}}
+@media(max-width:860px){.game-layout{grid-template-columns:1fr;height:auto;overflow:visible}body{overflow-x:hidden}}
+
+/* ── Side panel ── */
+.side-panel{
+  background:#fff;border-right:1px solid var(--border-dim);
+  display:flex;flex-direction:column;
+  overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:var(--indigo3) transparent;
+  height:100%;
+}
+.side-panel:last-child{border-right:none;border-left:1px solid var(--border-dim)}
+.side-panel::-webkit-scrollbar{width:3px}
+.side-panel::-webkit-scrollbar-thumb{background:var(--indigo3);border-radius:3px}
+.sp-head{
+  padding:.85rem 1.2rem .7rem;border-bottom:1px solid var(--border-dim);
+  display:flex;align-items:center;gap:.6rem;font-size:.7rem;font-weight:700;
+  letter-spacing:.5px;color:var(--text2);text-transform:uppercase;
+  flex-shrink:0;background:var(--bg4);position:sticky;top:0;z-index:5;
+}
+.sp-head::before{content:'';width:3px;height:14px;border-radius:2px;background:linear-gradient(180deg,var(--indigo),var(--violet2));flex-shrink:0}
+.sp-body{padding:1rem 1.2rem;flex:1}
+
+/* ── Stake chips ── */
+.stake-chips{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:.7rem}
+.s-chip{padding:.5rem .3rem;border-radius:10px;background:var(--bg4);border:1.5px solid var(--border-dim);text-align:center;cursor:pointer;transition:all .18s;font-weight:700;color:var(--text2)}
+.s-chip:hover{border-color:var(--indigo3);color:var(--indigo);background:var(--indigo5)}
+.s-chip.active{border-color:var(--indigo2);color:var(--indigo);background:var(--indigo5);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+.s-chip .sc-label{font-size:.54rem;color:var(--text4);font-weight:600;display:block;margin-bottom:1px;text-transform:uppercase;letter-spacing:.5px}
+.s-chip .sc-val{font-size:.95rem;font-weight:800}
+
+/* ── Player count chips ── */
+.pc-chips{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;margin-bottom:.7rem}
+.pc-chip{padding:.5rem .2rem;border-radius:10px;background:var(--bg4);border:1.5px solid var(--border-dim);text-align:center;cursor:pointer;transition:all .18s;font-size:.85rem;font-weight:700;color:var(--text2)}
+.pc-chip:hover,.pc-chip.active{border-color:var(--indigo2);color:var(--indigo);background:var(--indigo5)}
+.pc-chip .pcc-label{font-size:.52rem;color:var(--text4);font-weight:600;display:block;margin-bottom:1px;text-transform:uppercase;letter-spacing:.5px}
+
+/* ── Pot box ── */
+.pot-box{padding:.7rem .9rem;border-radius:12px;background:linear-gradient(135deg,var(--indigo5),#fff);border:1.5px solid var(--border);margin-bottom:.7rem}
+.pot-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:.28rem;font-size:.8rem}
+.pot-row:last-child{margin-bottom:0;padding-top:.35rem;border-top:1px solid var(--border-dim)}
+.pot-lbl{font-weight:600;color:var(--text3)}
+.pot-val{font-weight:700;color:var(--text)}
+.pot-val.big{font-size:1.15rem;font-weight:800;color:var(--indigo)}
+
+/* ── Action button ── */
+.btn-find{width:100%;padding:.85rem;border-radius:12px;font-size:.85rem;font-weight:700;border:none;cursor:pointer;transition:all .2s;background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;box-shadow:0 3px 14px rgba(5,150,105,.3)}
+.btn-find:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 5px 20px rgba(5,150,105,.45)}
+.btn-find:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+.btn-leave{width:100%;padding:.7rem;border-radius:12px;font-size:.8rem;font-weight:700;border:1.5px solid rgba(220,38,38,.25);cursor:pointer;background:var(--red3);color:var(--red);transition:all .18s;display:none;margin-top:.4rem}
+.btn-leave:hover{background:#fecaca;border-color:var(--red2)}
+
+/* ── Match progress ── */
+.match-progress{padding:.7rem .9rem;border-radius:10px;background:var(--indigo5);border:1px solid var(--border);margin-bottom:.7rem;display:none}
+.match-progress.active{display:block}
+.mp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem}
+.mp-title{font-size:.7rem;font-weight:700;color:var(--indigo);letter-spacing:.3px}
+.mp-count{font-size:.78rem;font-weight:800;color:var(--indigo)}
+.mp-bar-track{height:6px;background:var(--indigo4);border-radius:4px;overflow:hidden;margin-bottom:.35rem}
+.mp-bar-fill{height:100%;background:linear-gradient(90deg,var(--indigo),var(--violet2));border-radius:4px;transition:width .3s var(--ease-out-expo);width:0%}
+.mp-status{font-size:.7rem;font-weight:600;color:var(--text3)}
+
+/* ── Section label ── */
+.sl{font-size:.68rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem}
+
+/* ── Arena ── */
+.arena{
+  background:linear-gradient(160deg,var(--bg2),#fff);
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:1.2rem 1.5rem 1.5rem;
+  gap:1rem;position:relative;overflow-y:auto;overflow-x:hidden;
+}
+.arena::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 50% at 50% 40%,rgba(79,70,229,.06) 0%,transparent 65%);pointer-events:none;z-index:0}
+
+/* ── Status bar above wheel ── */
+.arena-bar{
+  width:100%;max-width:460px;padding:.7rem 1.2rem;border-radius:12px;
+  background:#fff;border:1px solid var(--border-dim);
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  box-shadow:0 1px 6px rgba(0,0,0,.04);flex-shrink:0;
+}
+.ab-item{display:flex;flex-direction:column;align-items:center;gap:1px}
+.ab-val{font-size:.92rem;font-weight:800;color:var(--text)}
+.ab-lbl{font-size:.6rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text4)}
+
+/* ── Wheel wrapper ── */
+.wheel-wrap{
+  position:relative;
+  width:min(440px,84vw);
+  height:min(440px,84vw);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+
+/* Gold rim layers */
+.rim-outer{position:absolute;inset:-18px;border-radius:50%;z-index:0;background:conic-gradient(#3a2000 0deg,#8B6914 15deg,#FFD700 30deg,#fffacd 45deg,#FFD700 60deg,#c68a00 80deg,#8B6914 100deg,#FFD700 120deg,#fffacd 140deg,#FFD700 160deg,#B8860B 180deg,#5c3a00 200deg,#8B6914 220deg,#FFD700 240deg,#fffacd 260deg,#FFD700 280deg,#c68a00 300deg,#B8860B 320deg,#FFD700 340deg,#5c3a00 360deg);box-shadow:0 10px 40px rgba(0,0,0,.2),inset 0 2px 8px rgba(255,255,255,.25)}
+.rim-gap{position:absolute;inset:-8px;border-radius:50%;z-index:1;background:var(--bg2)}
+.rim-ring{position:absolute;inset:-2px;border-radius:50%;z-index:1;border:2px solid rgba(255,215,0,.5)}
+
+/* Peg */
+.peg{position:absolute;top:-10px;left:50%;transform:translateX(-50%);z-index:25;display:flex;flex-direction:column;align-items:center}
+.peg-tri{width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:30px solid #FFD700;filter:drop-shadow(0 4px 8px rgba(255,180,0,.6))}
+.peg-base{width:22px;height:10px;margin-top:-4px;background:radial-gradient(circle at 50% 30%,#fffacd,#c68a00);border-radius:3px 3px 8px 8px;margin-left:-1px}
+
+/* Canvas */
+#spinCanvas{position:relative;z-index:2;border-radius:50%;display:block;filter:drop-shadow(0 8px 24px rgba(0,0,0,.18));will-change:transform}
+
+/* Ball */
+#ballEl{position:absolute;z-index:15;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.95) 0%,rgba(255,255,255,.3) 22%,transparent 50%),radial-gradient(circle at 50% 50%,#f0f0f0 0%,#d0d0d0 40%,#888 75%,#444 100%);box-shadow:0 4px 10px rgba(0,0,0,.4),inset 0 -1px 3px rgba(0,0,0,.2);transform:translate(-50%,-50%);pointer-events:none;display:none;will-change:left,top}
+
+/* Countdown overlay ON the wheel */
+.cd-overlay{
+  position:absolute;inset:0;z-index:20;
+  border-radius:50%;
+  background:rgba(238,240,248,.88);backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;flex-direction:column;gap:.4rem;
+}
+.cd-overlay.active{display:flex;animation:cd-pop .3s var(--ease-out-expo)}
+@keyframes cd-pop{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:none}}
+.cd-num{font-size:5rem;font-weight:800;color:var(--indigo);line-height:1;animation:cd-tick .9s ease-in-out infinite}
+@keyframes cd-tick{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.cd-label{font-size:.72rem;font-weight:700;color:var(--text3);letter-spacing:2px;text-transform:uppercase}
+.cd-sub{font-size:.82rem;font-weight:600;color:var(--text2);margin-top:.2rem}
+
+/* Result overlay ON the wheel */
+.result-overlay{
+  position:absolute;inset:0;z-index:22;
+  border-radius:50%;
+  background:rgba(238,240,248,.93);backdrop-filter:blur(8px);
+  display:none;align-items:center;justify-content:center;flex-direction:column;gap:.4rem;
+  text-align:center;padding:2rem;
+}
+.result-overlay.active{display:flex;animation:cd-pop .35s var(--ease-out-expo)}
+.ro-trophy{font-size:2.5rem;line-height:1;margin-bottom:.2rem}
+.ro-name{font-size:1.5rem;font-weight:800;color:var(--text);letter-spacing:-.3px;line-height:1.2}
+.ro-wins-label{font-size:.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3)}
+.ro-prize{font-size:2rem;font-weight:800;color:var(--green);line-height:1}
+.ro-fee{font-size:.72rem;color:var(--text4);margin-bottom:.4rem}
+
+/* Arena bottom strip */
+.arena-strip{
+  width:100%;max-width:460px;padding:.7rem 1.2rem;border-radius:12px;
+  background:#fff;border:1px solid var(--border-dim);
+  box-shadow:0 1px 6px rgba(0,0,0,.04);
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:.8rem;flex-shrink:0;gap:.5rem;
+}
+.as-item{display:flex;flex-direction:column;align-items:center;gap:1px}
+.as-val{font-weight:800;font-size:.9rem;color:var(--text)}
+.as-lbl{font-size:.58rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text4)}
+
+/* ── Right panel — players ── */
+.players-list{display:flex;flex-direction:column;gap:.4rem}
+.player-slot{
+  display:flex;align-items:center;gap:.7rem;padding:.55rem .75rem;border-radius:10px;
+  background:var(--bg4);border:1.5px solid var(--border-dim);
+  font-size:.82rem;transition:border-color .2s,background .2s;
+}
+.player-slot.filled{background:#fff;border-color:var(--border-dim2);animation:slot-in .25s var(--ease-out-expo)}
+.player-slot.me{border-color:var(--indigo2);background:var(--indigo5)}
+.player-slot.winner{border-color:rgba(5,150,105,.4);background:var(--green3);animation:winner-glow 1s ease-in-out 3}
+@keyframes slot-in{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
+@keyframes winner-glow{0%,100%{box-shadow:0 0 0 rgba(5,150,105,0)}50%{box-shadow:0 0 14px rgba(5,150,105,.35)}}
+.ps-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;color:#fff}
+.ps-empty-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;background:var(--border-dim);display:flex;align-items:center;justify-content:center}
+.ps-info{flex:1;min-width:0}
+.ps-name{font-size:.82rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ps-stake{font-size:.68rem;color:var(--text3);font-weight:500}
+.ps-empty-name{font-size:.78rem;color:var(--text4);font-weight:500;font-style:italic}
+.ps-tag{font-size:.62rem;font-weight:700;padding:.15rem .5rem;border-radius:4px;flex-shrink:0}
+.ps-me{background:var(--indigo5);color:var(--indigo)}
+.ps-bot{background:var(--bg2);color:var(--text4)}
+.ps-win{background:var(--green3);color:var(--green);font-size:.72rem}
+
+/* ── History ── */
+.hist-list{display:flex;flex-direction:column;gap:.4rem}
+.hist-item{display:flex;align-items:center;gap:.6rem;padding:.48rem .65rem;border-radius:8px;background:var(--bg4);border:1px solid var(--border-dim);font-size:.78rem;animation:slot-in .22s ease}
+.hist-item.won{border-color:rgba(5,150,105,.25);background:var(--green3)}
+.hist-item.lost{opacity:.55}
+.hi-n{min-width:18px;font-size:.65rem;font-weight:600;color:var(--text4)}
+.hi-d{flex:1;color:var(--text2);font-weight:500}
+.hi-p{font-weight:700}
+.hi-p.pos{color:var(--green)}
+.hi-p.neg{color:var(--red)}
+.hist-empty{text-align:center;padding:1.8rem;color:var(--text4);font-size:.78rem;font-weight:500}
+
+/* ── Confetti ── */
+.cfp{position:fixed;top:0;pointer-events:none;z-index:999;animation:cffall linear forwards;border-radius:2px}
+@keyframes cffall{0%{opacity:1;transform:translateY(-10px) rotate(0)}100%{opacity:0;transform:translateY(100vh) rotate(800deg)}}
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="top-bar">
+  <button class="tb-back" onclick="window.location.href='index.html'">← Back</button>
+  <span class="tb-logo">VELOX</span>
+  <span class="tb-game-name hide-mobile">Spin &amp; Win</span>
+  <div class="tb-balance">
+    <span class="tbb-l">Balance</span>
+    <span class="tbb-v" id="topBalance">₹0</span>
+  </div>
+  <button class="btn btn-gold btn-sm" onclick="window.location.href='index.html'">+ Deposit</button>
+</div>
+
+<div class="game-layout">
+
+  <!-- ═══ LEFT: Bet config ═══ -->
+  <div class="side-panel">
+    <div class="sp-head">Place Your Bet</div>
+    <div class="sp-body">
+
+      <div class="sl">Your Stake</div>
+      <div class="stake-chips" id="stakeChips">
+        <div class="s-chip" onclick="setStake(this,10)"><span class="sc-label">Stake</span><span class="sc-val">₹10</span></div>
+        <div class="s-chip" onclick="setStake(this,20)"><span class="sc-label">Stake</span><span class="sc-val">₹20</span></div>
+        <div class="s-chip active" onclick="setStake(this,50)"><span class="sc-label">Stake</span><span class="sc-val">₹50</span></div>
+        <div class="s-chip" onclick="setStake(this,100)"><span class="sc-label">Stake</span><span class="sc-val">₹100</span></div>
+        <div class="s-chip" onclick="setStake(this,200)"><span class="sc-label">Stake</span><span class="sc-val">₹200</span></div>
+        <div class="s-chip" onclick="setStake(this,500)"><span class="sc-label">Stake</span><span class="sc-val">₹500</span></div>
+      </div>
+
+      <div class="divider" style="margin:.5rem 0"></div>
+
+      <div class="sl">Players per Round</div>
+      <div class="pc-chips" id="pcChips">
+        <div class="pc-chip" onclick="setPC(this,5)"><span class="pcc-label">Players</span>5</div>
+        <div class="pc-chip active" onclick="setPC(this,10)"><span class="pcc-label">Players</span>10</div>
+        <div class="pc-chip" onclick="setPC(this,20)"><span class="pcc-label">Players</span>20</div>
+        <div class="pc-chip" onclick="setPC(this,30)"><span class="pcc-label">Players</span>30</div>
+        <div class="pc-chip" onclick="setPC(this,40)"><span class="pcc-label">Players</span>40</div>
+        <div class="pc-chip" onclick="setPC(this,50)"><span class="pcc-label">Players</span>50</div>
+      </div>
+
+      <div class="divider" style="margin:.5rem 0"></div>
+
+      <!-- Pot summary -->
+      <div class="pot-box">
+        <div class="pot-row"><span class="pot-lbl">Your Stake</span><span class="pot-val" id="potStake">₹50</span></div>
+        <div class="pot-row"><span class="pot-lbl">Players</span><span class="pot-val" id="potPC">10</span></div>
+        <div class="pot-row"><span class="pot-lbl">Gross Pot</span><span class="pot-val" id="potGross">₹500</span></div>
+        <div class="pot-row"><span class="pot-lbl">Platform (5%)</span><span class="pot-val" id="potFee">₹25</span></div>
+        <div class="pot-row"><span class="pot-lbl" style="color:var(--indigo);font-weight:700">🏆 Winner Gets</span><span class="pot-val big" id="potWin">₹475</span></div>
+      </div>
+
+      <!-- Match progress -->
+      <div class="match-progress" id="matchProgress">
+        <div class="mp-header">
+          <span class="mp-title">Matchmaking</span>
+          <span class="mp-count"><span id="mpJoined">1</span>/<span id="mpTotal">10</span></span>
+        </div>
+        <div class="mp-bar-track"><div class="mp-bar-fill" id="mpFill"></div></div>
+        <div class="mp-status" id="mpStatus">Searching for players...</div>
+      </div>
+
+      <button class="btn-find" id="btnFind" onclick="findMatch()">🎯 Find Match</button>
+      <button class="btn-leave" id="btnLeave" onclick="leaveGame()">Leave Queue</button>
+
+    </div>
+  </div>
+
+  <!-- ═══ CENTER: Arena ═══ -->
+  <div class="arena" id="arena">
+
+    <!-- Status bar -->
+    <div class="arena-bar" id="arenaBar">
+      <div class="ab-item"><div class="ab-val" id="abStake">₹50</div><div class="ab-lbl">Your Stake</div></div>
+      <div class="ab-item"><div class="ab-val" id="abPlayers">0/10</div><div class="ab-lbl">Players</div></div>
+      <div class="ab-item"><div class="ab-val" id="abPot">₹475</div><div class="ab-lbl">Prize Pool</div></div>
+      <div class="ab-item"><div class="ab-val" id="abStatus" style="color:var(--text3);font-size:.82rem">Waiting</div><div class="ab-lbl">Status</div></div>
+    </div>
+
+    <!-- Wheel -->
+    <div class="wheel-wrap" id="wheelWrap">
+      <div class="rim-outer"></div>
+      <div class="rim-gap"></div>
+      <div class="rim-ring"></div>
+      <div class="peg"><div class="peg-tri"></div><div class="peg-base"></div></div>
+
+      <canvas id="spinCanvas" width="420" height="420"></canvas>
+      <div id="ballEl"></div>
+
+      <!-- Countdown overlay -->
+      <div class="cd-overlay" id="cdOverlay">
+        <div class="cd-num" id="cdNum">5</div>
+        <div class="cd-label">Get Ready!</div>
+        <div class="cd-sub" id="cdSub">Spinning in a moment...</div>
+      </div>
+
+      <!-- Result overlay -->
+      <div class="result-overlay" id="resultOverlay">
+        <div class="ro-trophy" id="roTrophy">🏆</div>
+        <div class="ro-name" id="roName">—</div>
+        <div class="ro-wins-label">Wins the pot!</div>
+        <div class="ro-prize" id="roPrize">₹0</div>
+        <div class="ro-fee" id="roFee"></div>
+        <button class="btn btn-gold btn-sm" style="margin-top:.5rem" onclick="resetGame()">Play Again</button>
+      </div>
+    </div>
+
+    <!-- Bottom strip -->
+    <div class="arena-strip">
+      <div class="as-item"><div class="as-val" id="asJoined">0</div><div class="as-lbl">Joined</div></div>
+      <div class="as-item"><div class="as-val" id="asNeeded">10</div><div class="as-lbl">Needed</div></div>
+      <div class="as-item"><div class="as-val" id="asPool">₹475</div><div class="as-lbl">Prize Pool</div></div>
+      <div class="as-item"><div class="as-val" id="asRound">—</div><div class="as-lbl">Round</div></div>
+    </div>
+
+  </div>
+
+  <!-- ═══ RIGHT: Players + History ═══ -->
+  <div class="side-panel">
+    <div class="sp-head">
+      Players
+      <span id="playerBadge" style="margin-left:auto;font-size:.72rem;font-weight:800;color:var(--indigo)">0/10</span>
+    </div>
+    <div class="sp-body" style="padding:.8rem 1rem">
+      <div class="players-list" id="playersList"></div>
+    </div>
+
+    <div class="sp-head" style="border-top:1px solid var(--border-dim)">
+      My History
+      <span id="histCount" style="margin-left:auto;font-size:.7rem;color:var(--text3)">0 games</span>
+    </div>
+    <div class="sp-body" style="padding:.8rem 1rem">
+      <div class="hist-list" id="histList">
+        <div class="hist-empty">No games played yet</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════
+   VELOX SPIN & WIN — Complete Game Engine
+══════════════════════════════════════════════════ */
+
+/* ── Supabase client ── */
+const _sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+
+/* ── Telegram SDK ── */
+const _tg = window.Telegram?.WebApp;
+if (_tg) { _tg.expand(); _tg.ready(); }
+function haptic(type = 'light') {
+  try { _tg?.HapticFeedback?.impactOccurred(type); } catch(e) {}
+}
+
+/* ── Auth & Balance ── */
+const USER = JSON.parse(localStorage.getItem('velox_user') || 'null');
+let balance = 0;
+let _sbUserId = null;
+
+async function loadBalance() {
+  // Try to get Telegram user id
+  const tgUser = _tg?.initDataUnsafe?.user;
+  if (tgUser) {
+    _sbUserId = tgUser.id;
+    const { data } = await _sb.from('users').select('balance').eq('id', tgUser.id).single();
+    if (data) {
+      balance = parseFloat(data.balance) || 0;
+      // Real-time sync
+      _sb.channel('sw-balance')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${tgUser.id}` }, p => {
+          balance = parseFloat(p.new.balance) || 0;
+          updateBalanceUI();
+        }).subscribe();
+    }
+  } else {
+    // Fallback to localStorage for browser testing
+    balance = parseFloat(localStorage.getItem('velox_balance') || '0');
+    if (balance < 100) { balance = 5000; saveBalance(); }
+  }
+}
+
+async function saveBalance() {
+  if (_sbUserId) {
+    await _sb.from('users').update({ balance }).eq('id', _sbUserId);
+  } else {
+    localStorage.setItem('velox_balance', balance.toFixed(2));
+  }
+}
+
+/* ── Game state ── */
+let stake = 50;
+let maxPlayers = 10;
+let players = [];           // { name, color, isMe, emoji }
+let gameState = 'idle';     // idle | matching | countdown | spinning | result
+let roundNum = 0;
+let histCount = 0;
+
+/* ── Bot data ── */
+const BOT_NAMES = [
+  'Arjun S','Priya K','Rohan M','Ananya R','Vikram P','Neha T',
+  'Karan B','Divya N','Aditya V','Shreya J','Rahul D','Kavya S',
+  'Dev A','Riya C','Akash G','Pooja M','Sanjay L','Meera P',
+  'Harsh K','Tanya B','Nikhil R','Simran W','Ayaan X','Ishaan Z'
+];
+const BOT_COLORS = [
+  '#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c',
+  '#e67e22','#e91e63','#00bcd4','#8bc34a','#ff5722','#607d8b',
+  '#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6','#06b6d4',
+  '#84cc16','#f97316','#a855f7','#14b8a6','#fb923c','#818cf8'
+];
+const EMOJIS = ['🎲','🃏','💫','🌟','🔥','⚡','🎯','🚀','💎','✨','🎪','🎭'];
+let botPool = [...BOT_NAMES].sort(() => Math.random() - .5);
+let colorPool = [...BOT_COLORS];
+
+function nextBot() {
+  if (!botPool.length) botPool = [...BOT_NAMES].sort(() => Math.random() - .5);
+  if (!colorPool.length) colorPool = [...BOT_COLORS];
+  const name = botPool.pop();
+  const color = colorPool.splice(Math.floor(Math.random() * colorPool.length), 1)[0];
+  return { name, color, isMe: false, emoji: EMOJIS[Math.floor(Math.random() * EMOJIS.length)] };
+}
+
+/* ── Canvas setup ── */
+const C = document.getElementById('spinCanvas');
+const ctx = C.getContext('2d');
+const SZ = C.width, CX = SZ / 2, CY = SZ / 2;
+const R_OUT = SZ / 2 - 3;
+
+/* Offscreen caches */
+let offWheel = null, offAxle = null;
+let wheelAngle = 0;
+let spinActive = false;
+let ballEl = document.getElementById('ballEl');
+let ballAngle = 0, ballRadius = 0;
+let ballRestAngle = null, ballRestRadius = 0;
+let _cc = null; // coord cache
+
+/* ── Init ── */
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadBalance();
+  updateBalanceUI();
+  updatePotUI();
+  buildEmptySlots();
+  drawIdleWheel();
+});
+
+/* ── Balance ── */
+function fmtINR(v) {
+  if (v >= 1e7) return '₹' + (v/1e7).toFixed(1) + 'Cr';
+  if (v >= 1e5) return '₹' + (v/1e5).toFixed(1) + 'L';
+  if (v >= 1e3) return '₹' + (v/1e3).toFixed(1) + 'K';
+  return '₹' + v.toFixed(0);
+}
+function updateBalanceUI() {
+  document.getElementById('topBalance').textContent = fmtINR(balance) + ' TON';
+}
+
+
+/* ── Pot calc ── */
+function calcPot() {
+  const gross = stake * maxPlayers;
+  const fee = gross * 0.05;
+  return { gross, fee, prize: gross - fee };
+}
+function updatePotUI() {
+  const { gross, fee, prize } = calcPot();
+  document.getElementById('potStake').textContent  = '₹' + stake;
+  document.getElementById('potPC').textContent      = maxPlayers;
+  document.getElementById('potGross').textContent   = '₹' + gross;
+  document.getElementById('potFee').textContent     = '₹' + fee.toFixed(0);
+  document.getElementById('potWin').textContent     = '₹' + prize.toFixed(0);
+  document.getElementById('abStake').textContent    = '₹' + stake;
+  document.getElementById('abPot').textContent      = fmtINR(prize);
+  document.getElementById('asPool').textContent     = fmtINR(prize);
+  document.getElementById('asNeeded').textContent   = maxPlayers;
+  document.getElementById('mpTotal').textContent    = maxPlayers;
+}
+
+function setStake(el, val) {
+  if (gameState !== 'idle') return;
+  document.querySelectorAll('.s-chip').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+  stake = val;
+  updatePotUI();
+}
+function setPC(el, val) {
+  if (gameState !== 'idle') return;
+  document.querySelectorAll('.pc-chip').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+  maxPlayers = val;
+  updatePotUI();
+  buildEmptySlots();
+}
+
+/* ── Player slots UI ── */
+function buildEmptySlots() {
+  const list = document.getElementById('playersList');
+  list.innerHTML = Array.from({ length: maxPlayers }, (_, i) => `
+    <div class="player-slot" id="slot${i}">
+      <div class="ps-empty-avatar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2">
+          <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+      </div>
+      <div class="ps-info"><div class="ps-empty-name">Waiting...</div></div>
+      <span class="ps-tag ps-bot" style="opacity:.4">#${i+1}</span>
+    </div>
+  `).join('');
+  document.getElementById('playerBadge').textContent = '0/' + maxPlayers;
+  document.getElementById('asJoined').textContent = '0';
+  document.getElementById('abPlayers').textContent = '0/' + maxPlayers;
+}
+
+function fillSlot(idx, player) {
+  const slot = document.getElementById('slot' + idx);
+  if (!slot) return;
+  slot.className = 'player-slot filled' + (player.isMe ? ' me' : '');
+  const initials = player.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  slot.innerHTML = `
+    <div class="ps-avatar" style="background:${player.color}">${initials}</div>
+    <div class="ps-info">
+      <div class="ps-name">${player.name}${player.isMe ? ' (You)' : ''}</div>
+      <div class="ps-stake">₹${stake} stake</div>
+    </div>
+    <span class="ps-tag ${player.isMe ? 'ps-me' : 'ps-bot'}">${player.isMe ? 'YOU' : player.emoji}</span>
+  `;
+  const joined = players.length;
+  document.getElementById('playerBadge').textContent = joined + '/' + maxPlayers;
+  document.getElementById('asJoined').textContent = joined;
+  document.getElementById('abPlayers').textContent = joined + '/' + maxPlayers;
+}
+
+/* ── Find match ── */
+function findMatch() {
+  /* Allow play even without login — use guest name */
+  const myName = USER
+    ? (USER.firstName + (USER.lastName ? ' ' + USER.lastName[0] + '.' : ''))
+    : 'You (Guest)';
+
+  if (balance < stake) {
+    /* Give guest players a free balance so they can try the game */
+    if (!USER) {
+      balance = 5000;
+      saveBalance();
+      updateBalanceUI();
+      showToast('🎁 ₹5,000 demo balance added — enjoy!');
+    } else {
+      showToast('⚠ Insufficient balance — please deposit first');
+      return;
+    }
+  }
+
+  gameState = 'matching';
+  balance -= stake;
+  saveBalance();
+  updateBalanceUI();
+  haptic('medium');
+
+  document.getElementById('btnFind').disabled = true;
+  document.getElementById('btnFind').textContent = '🔍 Finding Match...';
+  document.getElementById('btnLeave').style.display = 'block';
+  document.getElementById('matchProgress').classList.add('active');
+  document.getElementById('stakeChips').style.pointerEvents = 'none';
+  document.getElementById('pcChips').style.pointerEvents   = 'none';
+
+  setStatus('Matching...');
+
+  /* User joins first */
+  const me = { name: myName, color: '#6366f1', isMe: true, emoji: '⭐' };
+  players = [me];
+  fillSlot(0, me);
+  updateProgress(1);
+
+  /* Build and show wheel immediately with just the user */
+  buildWheelBitmap();
+  drawWheel(wheelAngle);
+
+  /* Schedule bots to join one by one using recursive setTimeout — bulletproof */
+  const botsNeeded = maxPlayers - 1;
+  let countdownStarted = false;
+  function addNextBot(index) {
+    if (gameState !== 'matching') return;
+    if (index >= botsNeeded) return;
+
+    const bot = nextBot();
+    players.push(bot);
+    fillSlot(players.length - 1, bot);
+    updateProgress(players.length);
+    buildWheelBitmap();
+    drawWheel(wheelAngle);
+
+    if (players.length >= maxPlayers) {
+      if (!countdownStarted) {
+        countdownStarted = true;
+        setTimeout(startCountdown, 600);
+      }
+      return;
+    }
+
+    /* Next bot in 300–550ms */
+    const nextDelay = 300 + Math.random() * 250;
+    setTimeout(() => addNextBot(index + 1), nextDelay);
+  }
+
+  /* First bot arrives after 400ms */
+  setTimeout(() => addNextBot(0), 400);
+}
+
+function updateProgress(joined) {
+  const pct = (joined / maxPlayers) * 100;
+  document.getElementById('mpFill').style.width = pct + '%';
+  document.getElementById('mpJoined').textContent = joined;
+  document.getElementById('mpStatus').textContent =
+    joined >= maxPlayers ? 'All players found! Starting...' :
+    `Waiting for ${maxPlayers - joined} more player${maxPlayers - joined !== 1 ? 's' : ''}...`;
+}
+
+function leaveGame() {
+  if (gameState !== 'matching') return;
+  gameState = 'idle';
+  balance += stake;
+  saveBalance();
+  updateBalanceUI();
+  players = [];
+  resetUI();
+  showToast('👋 Left queue — stake refunded');
+}
+
+/* ── Countdown ── */
+function startCountdown() {
+  gameState = 'countdown';
+  setStatus('Starting!');
+  showToast('✅ All players ready! Starting in 5...');
+
+  document.getElementById('matchProgress').classList.remove('active');
+  document.getElementById('btnLeave').style.display = 'none';
+
+  const overlay = document.getElementById('cdOverlay');
+  overlay.classList.add('active');
+
+  let t = 5;
+  document.getElementById('cdNum').textContent = t;
+  document.getElementById('cdSub').textContent = `${maxPlayers} players ready`;
+
+  const tick = setInterval(() => {
+    t--;
+    document.getElementById('cdNum').textContent = t;
+    if (t <= 0) {
+      clearInterval(tick);
+      overlay.classList.remove('active');
+      startSpin();
+    }
+  }, 1000);
+}
+
+/* ══════════════════════════════════════════════
+   CANVAS — Wheel rendering
+══════════════════════════════════════════════ */
+
+function initials(name) {
+  return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+}
+function lighten(hex, amt) {
+  const [r,g,b] = hexRGB(hex);
+  return `rgb(${Math.min(255, r + (255-r)*amt)|0},${Math.min(255, g + (255-g)*amt)|0},${Math.min(255, b + (255-b)*amt)|0})`;
+}
+function darken(hex, amt) {
+  const [r,g,b] = hexRGB(hex);
+  return `rgb(${(r*(1-amt))|0},${(g*(1-amt))|0},${(b*(1-amt))|0})`;
+}
+function hexRGB(h) {
+  const c = h.replace('#','');
+  return [parseInt(c.slice(0,2),16), parseInt(c.slice(2,4),16), parseInt(c.slice(4,6),16)];
+}
+
+/* Build offscreen wheel bitmap from current players array */
+function buildWheelBitmap() {
+  const N = players.length;
+  if (N === 0) return;
+  const ARC = (2 * Math.PI) / N;
+
+  /* ── Wheel body ── */
+  offWheel = document.createElement('canvas');
+  offWheel.width = offWheel.height = SZ;
+  const oc = offWheel.getContext('2d');
+
+  for (let i = 0; i < N; i++) {
+    const s = i * ARC, e = s + ARC, m = s + ARC / 2;
+    const p = players[i];
+
+    /* Segment fill with radial gradient */
+    oc.beginPath(); oc.moveTo(CX, CY); oc.arc(CX, CY, R_OUT - 4, s, e); oc.closePath();
+    const gx = CX + Math.cos(m) * (R_OUT - 4) * .6;
+    const gy = CY + Math.sin(m) * (R_OUT - 4) * .6;
+    const gr = oc.createRadialGradient(gx, gy, 0, CX, CY, R_OUT - 4);
+    gr.addColorStop(0, lighten(p.color, .3));
+    gr.addColorStop(.45, p.color);
+    gr.addColorStop(1, darken(p.color, .45));
+    oc.fillStyle = gr; oc.fill();
+
+    /* Divider */
+    oc.beginPath(); oc.moveTo(CX, CY);
+    oc.lineTo(CX + Math.cos(s) * (R_OUT - 4), CY + Math.sin(s) * (R_OUT - 4));
+    oc.strokeStyle = 'rgba(255,255,255,.4)'; oc.lineWidth = 1.5; oc.stroke();
+
+    /* Light bevel sweep */
+    oc.beginPath(); oc.moveTo(CX, CY); oc.arc(CX, CY, R_OUT - 4, s, e); oc.closePath();
+    const bv = oc.createLinearGradient(
+      CX + Math.cos(m - ARC * .4) * (R_OUT - 4) * .35, CY + Math.sin(m - ARC * .4) * (R_OUT - 4) * .35,
+      CX + Math.cos(m + ARC * .4) * (R_OUT - 4) * .35, CY + Math.sin(m + ARC * .4) * (R_OUT - 4) * .35
+    );
+    bv.addColorStop(0, 'rgba(255,255,255,.22)'); bv.addColorStop(.5, 'rgba(255,255,255,0)'); bv.addColorStop(1, 'rgba(0,0,0,.14)');
+    oc.fillStyle = bv; oc.fill();
+
+    /* Avatar circle */
+    const avR = (R_OUT - 4) * .62;
+    const ax = CX + Math.cos(m) * avR, ay = CY + Math.sin(m) * avR;
+    oc.beginPath(); oc.arc(ax, ay, N > 20 ? 9 : 13, 0, 2*Math.PI);
+    oc.fillStyle = darken(p.color, .3); oc.fill();
+    oc.strokeStyle = 'rgba(255,255,255,.65)'; oc.lineWidth = 1.5; oc.stroke();
+
+    /* Initials inside avatar */
+    oc.save(); oc.translate(ax, ay);
+    oc.fillStyle = '#fff'; oc.textAlign = 'center'; oc.textBaseline = 'middle';
+    oc.font = `700 ${N > 20 ? 6 : 8}px 'Plus Jakarta Sans',sans-serif`;
+    oc.fillText(initials(p.name), 0, 0);
+    oc.restore();
+
+    /* Name label */
+    oc.save();
+    oc.translate(CX, CY); oc.rotate(m + Math.PI / 2);
+    oc.fillStyle = 'rgba(255,255,255,.92)';
+    oc.font = `600 ${N > 25 ? 7 : (N > 15 ? 8 : 9)}px 'Plus Jakarta Sans',sans-serif`;
+    oc.textAlign = 'center'; oc.textBaseline = 'middle';
+    oc.shadowColor = 'rgba(0,0,0,.6)'; oc.shadowBlur = 3;
+    const labelR = (R_OUT - 4) * .32;
+    const firstName = p.name.split(' ')[0].slice(0, N > 20 ? 5 : 7);
+    oc.fillText(firstName, 0, -labelR);
+    oc.restore();
+  }
+
+  /* Outer metallic rim */
+  for (let d = 0; d < 180; d++) {
+    const ra = d * 2 * Math.PI / 180;
+    const t = (Math.sin(ra * 4 + .6) + 1) / 2;
+    oc.beginPath(); oc.arc(CX, CY, R_OUT - 1, ra, ra + .038);
+    oc.strokeStyle = `hsl(42,${68+t*32|0}%,${26+t*50|0}%)`; oc.lineWidth = 4; oc.stroke();
+  }
+  const rl = oc.createLinearGradient(CX-R_OUT, CY-R_OUT, CX+R_OUT, CY+R_OUT);
+  rl.addColorStop(0, 'rgba(255,255,255,.45)'); rl.addColorStop(.5, 'rgba(255,255,255,.04)'); rl.addColorStop(1, 'rgba(0,0,0,.3)');
+  oc.beginPath(); oc.arc(CX, CY, R_OUT, 0, 2*Math.PI); oc.strokeStyle = rl; oc.lineWidth = 1.5; oc.stroke();
+
+  /* Gloss overlay */
+  const gl = oc.createRadialGradient(CX - R_OUT*.35, CY - R_OUT*.38, 0, CX, CY, R_OUT);
+  gl.addColorStop(0, 'rgba(255,255,255,.12)'); gl.addColorStop(.4, 'rgba(255,255,255,.03)'); gl.addColorStop(1, 'rgba(0,0,0,.15)');
+  oc.beginPath(); oc.arc(CX, CY, R_OUT, 0, 2*Math.PI); oc.fillStyle = gl; oc.fill();
+
+  /* ── Axle ── */
+  offAxle = document.createElement('canvas');
+  offAxle.width = offAxle.height = SZ;
+  const ac = offAxle.getContext('2d');
+  ac.beginPath(); ac.arc(CX, CY, 46, 0, 2*Math.PI); ac.fillStyle = 'rgba(0,0,0,.5)'; ac.fill();
+  const ag = ac.createRadialGradient(CX-12, CY-14, 2, CX, CY, 44);
+  ag.addColorStop(0,'#fffacd'); ag.addColorStop(.25,'#FFD700'); ag.addColorStop(.6,'#c68a00'); ag.addColorStop(1,'#4a2d00');
+  ac.beginPath(); ac.arc(CX, CY, 42, 0, 2*Math.PI); ac.fillStyle = ag; ac.fill();
+  [37,31].forEach(r => {
+    ac.beginPath(); ac.arc(CX,CY,r,0,2*Math.PI);
+    ac.strokeStyle = 'rgba(0,0,0,.28)'; ac.lineWidth = 1.5; ac.stroke();
+    ac.strokeStyle = 'rgba(255,255,255,.15)'; ac.lineWidth = .5; ac.stroke();
+  });
+  const sg = ac.createRadialGradient(CX-3,CY-3,0,CX,CY,9);
+  sg.addColorStop(0,'#fff'); sg.addColorStop(.35,'#FFD700'); sg.addColorStop(1,'#7a5200');
+  ac.beginPath(); ac.arc(CX,CY,9,0,2*Math.PI); ac.fillStyle=sg; ac.fill();
+  ac.strokeStyle='rgba(0,0,0,.45)'; ac.lineWidth=1; ac.stroke();
+}
+
+function drawWheel(angle) {
+  ctx.clearRect(0, 0, SZ, SZ);
+  if (!offWheel) { drawIdleWheel(); return; }
+  ctx.save();
+  ctx.shadowColor='rgba(0,0,0,.2)'; ctx.shadowBlur=20; ctx.shadowOffsetY=8;
+  ctx.beginPath(); ctx.arc(CX,CY,R_OUT,0,2*Math.PI); ctx.fillStyle='#000'; ctx.fill();
+  ctx.restore();
+  ctx.save(); ctx.translate(CX,CY); ctx.rotate(angle); ctx.drawImage(offWheel,-CX,-CY); ctx.restore();
+  ctx.drawImage(offAxle, 0, 0);
+}
+
+function drawIdleWheel() {
+  ctx.clearRect(0,0,SZ,SZ);
+  ctx.save();
+  ctx.shadowColor='rgba(0,0,0,.12)'; ctx.shadowBlur=20; ctx.shadowOffsetY=8;
+  ctx.beginPath(); ctx.arc(CX,CY,R_OUT,0,2*Math.PI);
+  const bg = ctx.createRadialGradient(CX,CY,0,CX,CY,R_OUT);
+  bg.addColorStop(0,'#e0e7ff'); bg.addColorStop(.6,'#c7d2fe'); bg.addColorStop(1,'#a5b4fc');
+  ctx.fillStyle=bg; ctx.fill(); ctx.restore();
+  for(let d=0;d<180;d++){
+    const ra=d*2*Math.PI/180; const t=(Math.sin(ra*4+.6)+1)/2;
+    ctx.beginPath(); ctx.arc(CX,CY,R_OUT-1,ra,ra+.038);
+    ctx.strokeStyle=`hsl(42,${68+t*32|0}%,${26+t*50|0}%)`; ctx.lineWidth=4; ctx.stroke();
+  }
+  ctx.fillStyle='rgba(99,102,241,.5)'; ctx.font="700 15px 'Plus Jakarta Sans',sans-serif";
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('SPIN & WIN', CX, CY - 10);
+  ctx.font="500 11px 'Plus Jakarta Sans',sans-serif"; ctx.fillStyle='rgba(99,102,241,.4)';
+  ctx.fillText('Select stake & find match', CX, CY + 10);
+}
+
+/* ── Ball helpers ── */
+function stageCoords() {
+  if (_cc) return _cc;
+  const wrap = document.getElementById('wheelWrap');
+  const wr = wrap.getBoundingClientRect();
+  const cr = C.getBoundingClientRect();
+  const sx = cr.width/SZ, sy = cr.height/SZ;
+  _cc = { cx: CX*sx+(cr.left-wr.left), cy: CY*sy+(cr.top-wr.top), sx, sy };
+  return _cc;
+}
+window.addEventListener('resize', () => { _cc = null; if(ballRestAngle!==null) setBall(ballRestAngle, ballRestRadius); });
+
+function setBall(a, r) {
+  const { cx, cy, sx, sy } = stageCoords();
+  ballEl.style.left = (cx + Math.cos(a) * r * sx) + 'px';
+  ballEl.style.top  = (cy + Math.sin(a) * r * sy) + 'px';
+}
+
+/* ── Spin sequence ── */
+function startSpin() {
+  gameState = 'spinning';
+  setStatus('Spinning!');
+  spinActive = true;
+
+  const TRACK_R = R_OUT - 16;
+  const DROP_R  = R_OUT + 55;
+  const DROP_A  = -Math.PI / 2;
+
+  /* Pick winner */
+  const winnerIdx = Math.floor(Math.random() * players.length);
+  const N = players.length;
+  const ARC = (2 * Math.PI) / N;
+  const pocketMid = winnerIdx * ARC + ARC / 2;
+  const extra = (6 + Math.random() * 4) * 2 * Math.PI;
+  const targetAngle = wheelAngle + extra + (((-Math.PI/2 - pocketMid) - wheelAngle - extra) % (2*Math.PI) + 2*Math.PI) % (2*Math.PI);
+
+  /* Phase 1: drop ball */
+  ballEl.style.display = 'block';
+  setBall(DROP_A, DROP_R);
+  ballAngle = DROP_A; ballRadius = DROP_R;
+
+  const DROP_DUR = 480;
+  const t0drop = performance.now();
+  function dropEase(t) { return t < .7 ? (t/.7)**2 : 1 + Math.sin((t-.7)/.3*Math.PI) * .09 * (1 - (t-.7)/.3); }
+
+  function dropFrame(now) {
+    const p = Math.min((now - t0drop) / DROP_DUR, 1);
+    const r = DROP_R - (DROP_R - TRACK_R) * dropEase(p);
+    setBall(DROP_A, r);
+    if (p < 1) { requestAnimationFrame(dropFrame); return; }
+    ballRadius = TRACK_R;
+    spinFrame_start();
+  }
+  requestAnimationFrame(dropFrame);
+
+  /* Phase 2: spin wheel + ball */
+  const SPIN_DUR = 5800;
+  let t0spin;
+  const a0 = wheelAngle;
+
+  function spinFrame_start() {
+    t0spin = performance.now();
+    requestAnimationFrame(spinFrame);
+  }
+  function spinFrame(now) {
+    const p = Math.min((now - t0spin) / SPIN_DUR, 1);
+    const ep = 1 - Math.pow(1 - p, 4.2);
+
+    wheelAngle = a0 + (targetAngle - a0) * ep;
+    drawWheel(wheelAngle);
+
+    ballAngle -= 0.22 * (1 - p * .87);
+    ballRadius = TRACK_R - (TRACK_R - (R_OUT - R_OUT * .28)) * ep;
+    setBall(ballAngle, ballRadius);
+
+    if (p < 1) { requestAnimationFrame(spinFrame); return; }
+
+    wheelAngle = ((targetAngle % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
+    ballRestAngle = ballAngle; ballRestRadius = ballRadius;
+    setBall(ballRestAngle, ballRestRadius);
+    spinActive = false;
+    showResult(winnerIdx);
+  }
+}
+
+/* ── Result ── */
+function showResult(winnerIdx) {
+  gameState = 'result';
+  const winner = players[winnerIdx];
+  const { gross, fee, prize } = calcPot();
+
+  /* Highlight winner slot */
+  const slot = document.getElementById('slot' + winnerIdx);
+  if (slot) { slot.classList.remove('filled', 'me'); slot.classList.add('winner'); }
+
+  /* Overlay */
+  document.getElementById('roTrophy').textContent = winner.isMe ? '🏆' : winner.emoji;
+  document.getElementById('roName').textContent    = winner.name + (winner.isMe ? ' (You)' : '');
+  document.getElementById('roPrize').textContent   = fmtINR(prize);
+  document.getElementById('roFee').textContent     = `Platform fee ₹${fee.toFixed(0)} deducted`;
+  document.getElementById('resultOverlay').classList.add('active');
+
+  setStatus(winner.isMe ? '🏆 You Won!' : winner.name + ' Won');
+  roundNum++;
+  document.getElementById('asRound').textContent = '#' + roundNum;
+
+  if (winner.isMe) {
+    balance += prize;
+    saveBalance(); updateBalanceUI();
+    haptic('heavy');
+    launchConfetti();
+    showToast('🏆 YOU WON ' + fmtINR(prize) + ' TON! Congratulations!');
+    addHistory(true, stake, prize, maxPlayers);
+  } else {
+    haptic('light');
+    showToast('😔 ' + winner.name + ' won ' + prize.toFixed(2) + ' TON. Better luck next time!');
+    addHistory(false, stake, 0, maxPlayers);
+  }
+}
+
+/* ── Reset ── */
+function resetGame() {
+  gameState = 'idle'; spinActive = false;
+  players = []; wheelAngle = 0;
+  ballRestAngle = null; ballEl.style.display = 'none';
+  offWheel = null; offAxle = null;
+  document.getElementById('resultOverlay').classList.remove('active');
+  document.getElementById('cdOverlay').classList.remove('active');
+  document.getElementById('matchProgress').classList.remove('active');
+  document.getElementById('btnFind').disabled = false;
+  document.getElementById('btnFind').textContent = '🎯 Find Match';
+  document.getElementById('btnLeave').style.display = 'none';
+  document.getElementById('stakeChips').style.pointerEvents = '';
+  document.getElementById('pcChips').style.pointerEvents   = '';
+  document.getElementById('asRound').textContent = '—';
+  buildEmptySlots();
+  updatePotUI();
+  setStatus('Waiting');
+  drawIdleWheel();
+}
+
+function resetUI() {
+  gameState = 'idle'; players = []; wheelAngle = 0;
+  ballEl.style.display = 'none'; offWheel = null; offAxle = null;
+  document.getElementById('cdOverlay').classList.remove('active');
+  document.getElementById('matchProgress').classList.remove('active');
+  document.getElementById('btnFind').disabled = false;
+  document.getElementById('btnFind').textContent = '🎯 Find Match';
+  document.getElementById('btnLeave').style.display = 'none';
+  document.getElementById('stakeChips').style.pointerEvents = '';
+  document.getElementById('pcChips').style.pointerEvents   = '';
+  buildEmptySlots();
+  updatePotUI();
+  setStatus('Waiting');
+  drawIdleWheel();
+}
+
+/* ── Status ── */
+function setStatus(s) {
+  document.getElementById('abStatus').textContent = s;
+}
+
+/* ── History ── */
+function addHistory(won, s, prize, n) {
+  histCount++;
+  document.getElementById('histCount').textContent = histCount + ' game' + (histCount !== 1 ? 's' : '');
+  const list = document.getElementById('histList');
+  const empty = list.querySelector('.hist-empty');
+  if (empty) empty.remove();
+  const pnl = won ? prize - s : -s;
+  const el = document.createElement('div');
+  el.className = 'hist-item ' + (won ? 'won' : 'lost');
+  el.innerHTML = `
+    <div class="hi-n">${histCount}</div>
+    <div class="hi-d">${n}p · ₹${s}</div>
+    <div class="hi-p ${pnl >= 0 ? 'pos' : 'neg'}">${pnl >= 0 ? '+' : ''}₹${Math.abs(pnl).toFixed(0)}</div>
+  `;
+  list.insertBefore(el, list.firstChild);
+}
+
+/* ── Confetti ── */
+function launchConfetti() {
+  const cols = ['#6366f1','#a855f7','#fbbf24','#10b981','#ef4444','#fff','#3b82f6','#f97316'];
+  for (let i = 0; i < 110; i++) {
+    const p = document.createElement('div'); p.className = 'cfp';
+    p.style.cssText = `left:${Math.random()*100}vw;background:${cols[~~(Math.random()*cols.length)]};width:${Math.random()*9+4}px;height:${Math.random()*9+4}px;border-radius:${Math.random()>.5?'50%':'2px'};animation-duration:${(Math.random()*2.2+2).toFixed(1)}s;animation-delay:${(Math.random()*.8).toFixed(2)}s`;
+    document.body.appendChild(p);
+    p.addEventListener('animationend', () => p.remove());
+  }
+}
+
+/* ── Toast ── */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
