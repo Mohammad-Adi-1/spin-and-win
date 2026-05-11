@@ -234,11 +234,16 @@ input,select,textarea{font-family:inherit}
   .hide-mobile{display:none!important}
   .nav-inner{padding:0 1rem}
   .nav-links{display:none}
-  .hero-metrics{flex-wrap:wrap;gap:2px;padding:0 1rem}
-  .hero-metric{flex:1 1 45%;min-width:0}
-  .hero-metric:first-child{border-radius:8px 0 0 0}
-  .hero-metric:nth-child(2){border-radius:0 8px 0 0}
-  .hero-metric:last-child{border-radius:0 0 8px 0}
+  .hero-metrics{
+    display:grid;grid-template-columns:1fr 1fr;
+    gap:2px;padding:0 1rem;margin-bottom:2rem;
+  }
+  .hero-metric{border-radius:0!important}
+  .hero-metric:first-child{border-radius:8px 0 0 0!important}
+  .hero-metric:nth-child(2){border-radius:0 8px 0 0!important}
+  .hero-metric:nth-child(3){border-radius:0 0 0 8px!important}
+  .hero-metric:nth-child(4){border-radius:0 0 8px 0!important}
+  .hero-metric:nth-child(5){display:none}
   .hero-content{padding:0 .8rem}
   .hero-title{font-size:clamp(2.2rem,8vw,4rem);letter-spacing:-1.5px}
   .hero-sub{font-size:.9rem}
@@ -251,31 +256,56 @@ input,select,textarea{font-family:inherit}
 
 /* Mobile — Telegram Mini App */
 @media(max-width:480px){
-  :root{--header-h:56px}
+  :root{--header-h:52px}
   body{font-size:15px}
-  .nav-inner{padding:0 .75rem;gap:.5rem}
-  .nav-logo{font-size:1.2rem}
-  .nav-actions{gap:.4rem}
-  .balance-pill{padding:.3rem .6rem;gap:.4rem}
-  .balance-pill .bp-label{font-size:.5rem}
-  .balance-pill .bp-val{font-size:.75rem}
-  .balance-pill .bp-icon{font-size:.8rem}
-  .btn-sm{padding:.35rem .65rem;font-size:.7rem}
-  .user-avatar{width:30px;height:30px;font-size:.65rem}
-  
-  /* Hero */
+
+  /* ── Nav fix ── */
+  .nav-inner{
+    padding:0 .5rem;gap:.3rem;
+    overflow:hidden;
+  }
+  .nav-logo{font-size:1.1rem;flex-shrink:0}
+  .nav-actions{
+    gap:.3rem;flex-shrink:1;
+    overflow:hidden;min-width:0;
+  }
+
+  /* Balance pill — compact on mobile */
+  .balance-pill{
+    padding:.25rem .5rem;gap:.3rem;
+    max-width:110px;overflow:hidden;
+    flex-shrink:1;min-width:0;
+  }
+  .balance-pill .bp-label{display:none}
+  .balance-pill .bp-val{font-size:.7rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .balance-pill .bp-icon{font-size:.75rem;flex-shrink:0}
+
+  /* Hide + Deposit button on mobile to save space (pill is tappable) */
+  .user-nav > .btn{display:none}
+
+  .user-avatar{width:28px;height:28px;font-size:.6rem;flex-shrink:0}
+
+  /* TON Connect button — scale down on mobile */
+  #ton-connect-button{transform:scale(.75);transform-origin:right center;flex-shrink:0}
+
+  /* ── Hero metrics — clean 2x2 grid ── */
   .hero{min-height:85vh}
-  .hero-metrics{flex-wrap:wrap;gap:1px;padding:0 .5rem;margin-bottom:1.5rem}
-  .hero-metric{flex:1 1 48%;padding:.6rem .5rem}
+  .hero-metrics{
+    display:grid;grid-template-columns:1fr 1fr;
+    gap:2px;padding:0 .75rem;margin-bottom:1.5rem;
+  }
+  .hero-metric{padding:.55rem .4rem}
   .hero-metric:nth-child(5){display:none}
-  .hm-val{font-size:1.1rem}
-  .hm-lbl{font-size:.5rem;letter-spacing:.5px}
-  .hero-content{margin-top:-.5rem;padding:0 .5rem}
-  .hero-eyebrow{font-size:.58rem;letter-spacing:2px;margin-bottom:.6rem}
-  .hero-title{font-size:2.4rem;letter-spacing:-1px;margin-bottom:.8rem}
-  .hero-sub{font-size:.82rem;margin-bottom:1.5rem}
-  .hero-cta{gap:.6rem}
-  .hero-cta .btn-lg{padding:.65rem 1.4rem;font-size:.8rem}
+  .hm-val{font-size:1rem}
+  .hm-lbl{font-size:.48rem;letter-spacing:.4px}
+
+  /* ── Hero content ── */
+  .hero-content{margin-top:-.5rem;padding:0 .75rem}
+  .hero-eyebrow{font-size:.55rem;letter-spacing:2px;margin-bottom:.5rem}
+  .hero-title{font-size:2.2rem;letter-spacing:-1px;margin-bottom:.7rem}
+  .hero-sub{font-size:.8rem;margin-bottom:1.3rem}
+  .hero-cta{gap:.5rem}
+  .hero-cta .btn-lg{padding:.6rem 1.2rem;font-size:.78rem}
   .scroll-hint{display:none}
 
   /* Deposit banner */
@@ -305,7 +335,7 @@ input,select,textarea{font-family:inherit}
   .footer-inner{grid-template-columns:1fr;gap:1.5rem;padding:0 1rem}
   .footer-bottom{padding:1rem;flex-direction:column;text-align:center;font-size:.65rem}
 
-  /* Modal full-width on mobile */
+  /* Modal — slides up from bottom on mobile */
   .modal-overlay{padding:.5rem;align-items:flex-end}
   .modal-box{max-width:100%!important;border-radius:20px 20px 0 0;max-height:90vh;overflow-y:auto}
   .modal-head{padding:1rem 1.2rem}
@@ -314,16 +344,14 @@ input,select,textarea{font-family:inherit}
 
   /* Toast */
   #toast{font-size:.78rem;padding:.6rem 1.2rem;bottom:1rem;max-width:90vw;white-space:normal;text-align:center}
-
-  /* TON Connect button smaller */
-  #ton-connect-button{transform:scale(.85);transform-origin:right center}
 }
 
 /* Extra small (SE, mini phones) */
 @media(max-width:360px){
-  .hero-title{font-size:2rem}
+  .hero-title{font-size:1.8rem}
   .games-grid{grid-template-columns:1fr 1fr;gap:.4rem}
   .game-card{aspect-ratio:1/1}
   .nav-logo{font-size:1rem}
   .balance-pill{display:none}
+  #ton-connect-button{transform:scale(.65);transform-origin:right center}
 }
